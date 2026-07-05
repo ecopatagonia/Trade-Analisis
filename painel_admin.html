@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Painel Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+.status-pill{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; padding:4px 11px; border-radius:100px; }
+.status-ativo{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.status-inativo{ background:#E6E2D4; color:var(--tinta-suave); }
+.status-pendente{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+.btn-acao{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; background:none; border:1px solid var(--linha-forte); padding:6px 12px; cursor:pointer; color:var(--tinta); margin-right:6px; }
+.btn-acao:hover{ background:var(--papel-escuro); }
+.btn-acao:disabled{ opacity:0.5; cursor:default; }
+.btn-acao.ativar:hover{ border-color:var(--verde-lucro); color:var(--verde-lucro); }
+.btn-acao.desativar:hover{ border-color:var(--vermelho-prejuizo); color:var(--vermelho-prejuizo); }
+.vazio{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); padding:14px 0; }
+.msg-topo{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; margin-bottom:16px; display:none; }
+.msg-topo.sucesso{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.msg-topo.erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.busca-participante{ font-family:'IBM Plex Sans', sans-serif; font-size:14px; padding:10px 14px; width:100%; max-width:360px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); margin-bottom:16px; }
+.busca-participante:focus{ outline:2px solid var(--verde-lucro); outline-offset:1px; }
+.btn-acao.analise-on{ border-color:var(--ambar-alerta); color:var(--ambar-alerta); }
+.btn-acao.analise-on:hover{ background:var(--ambar-alerta-fundo); }
+.status-pill.status-analise-on{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <div class="msg-topo" id="msg-topo"></div>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Cadastros pendentes</h2><span class="n-amostra" id="n-pendentes">carregando...</span></div>
+      <table class="planilha" id="tabela-pendentes" style="display:none;">
+        <thead><tr><th>Nome</th><th>Celular</th><th>Cadastrado em</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody id="corpo-pendentes"></tbody>
+      </table>
+      <div class="vazio" id="vazio-pendentes" style="display:none;">Nenhum cadastro pendente no momento.</div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Usuários do grupo</h2><span class="n-amostra" id="n-usuarios">carregando...</span></div>
+      <input type="text" class="busca-participante" id="busca-participante" placeholder="Buscar participante por nome…" oninput="renderizarUsuariosAtivos()">
+      <table class="planilha" id="tabela-usuarios" style="display:none;">
+        <thead><tr><th>Nome</th><th>Celular</th><th>Rol</th><th>Conta</th><th>Análise</th><th>Ações</th></tr></thead>
+        <tbody id="corpo-usuarios"></tbody>
+      </table>
+      <div class="vazio" id="vazio-busca" style="display:none;">Nenhum participante encontrado com esse nome.</div>
+    </section>
+
+  </main>
+
+  <footer>Painel restrito a usuários com Rol = admin</footer>
+
+<script src="nav.js"></script>
+<script>
+  let sessaoAtual = null;
+  let usuariosAtivosCache = []; // cache local para filtrar por nome sem golpear o backend a cada tecla
+
+  function formatarCelular(ddi, celular) {
+    return '+' + ddi + ' ' + celular;
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('msg-topo');
+    el.textContent = texto;
+    el.className = 'msg-topo ' + tipo;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  async function carregarUsuarios() {
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=usuarios&token=' + encodeURIComponent(sessaoAtual.token));
+      const data = await resp.json();
+
+      if (!data.ok) {
+        mostrarMensagem(data.error || 'Erro ao carregar usuários.', 'erro');
+        return;
+      }
+
+      const pendentes = data.usuarios.filter(u => u.Ativo !== 'Sim');
+      usuariosAtivosCache = data.usuarios.filter(u => u.Ativo === 'Sim');
+
+      document.getElementById('n-pendentes').textContent = pendentes.length + ' aguardando ativação';
+
+      const corpoPendentes = document.getElementById('corpo-pendentes');
+      const tabelaPendentes = document.getElementById('tabela-pendentes');
+      const vazioPendentes = document.getElementById('vazio-pendentes');
+
+      if (pendentes.length === 0) {
+        tabelaPendentes.style.display = 'none';
+        vazioPendentes.style.display = 'block';
+      } else {
+        tabelaPendentes.style.display = 'table';
+        vazioPendentes.style.display = 'none';
+        corpoPendentes.innerHTML = pendentes.map(u => `
+          <tr>
+            <td>${u.Nome}</td>
+            <td>${formatarCelular(u.DDI, u.Celular)}</td>
+            <td>${new Date(u.Data_Cadastro).toLocaleString('pt-BR')}</td>
+            <td><span class="status-pill status-pendente">Pendente</span></td>
+            <td>
+              <button class="btn-acao ativar" onclick="alterarStatus('${u.DDI}','${u.Celular}','Sim',this)">Ativar</button>
+              <button class="btn-acao desativar" onclick="alterarStatus('${u.DDI}','${u.Celular}','Não',this)">Recusar</button>
+            </td>
+          </tr>`).join('');
+      }
+
+      renderizarUsuariosAtivos();
+
+    } catch (err) {
+      mostrarMensagem('Erro de conexão ao carregar usuários.', 'erro');
+    }
+  }
+
+  function renderizarUsuariosAtivos() {
+    const termoBusca = document.getElementById('busca-participante').value.trim().toLowerCase();
+    const filtrados = termoBusca
+      ? usuariosAtivosCache.filter(u => u.Nome.toLowerCase().includes(termoBusca))
+      : usuariosAtivosCache;
+
+    document.getElementById('n-usuarios').textContent = usuariosAtivosCache.length + ' participantes ativos';
+
+    const tabelaUsuarios = document.getElementById('tabela-usuarios');
+    const vazioBusca = document.getElementById('vazio-busca');
+    const corpoUsuarios = document.getElementById('corpo-usuarios');
+
+    if (filtrados.length === 0) {
+      tabelaUsuarios.style.display = 'none';
+      vazioBusca.style.display = 'block';
+      return;
+    }
+    tabelaUsuarios.style.display = 'table';
+    vazioBusca.style.display = 'none';
+
+    corpoUsuarios.innerHTML = filtrados.map(u => {
+      const analiseHabilitada = u.Acesso_Analise === 'Sim';
+      return `
+      <tr>
+        <td>${u.Nome}</td>
+        <td>${formatarCelular(u.DDI, u.Celular)}</td>
+        <td>${u.Rol}</td>
+        <td><span class="status-pill status-ativo">Ativa</span></td>
+        <td><span class="status-pill ${analiseHabilitada ? 'status-analise-on' : 'status-inativo'}">${analiseHabilitada ? 'Habilitada' : 'Desabilitada'}</span></td>
+        <td>
+          <button class="btn-acao desativar" onclick="alterarStatus('${u.DDI}','${u.Celular}','Não',this)">Desativar conta</button>
+          <button class="btn-acao ${analiseHabilitada ? 'desativar' : 'analise-on'}" onclick="alterarAnalise('${u.DDI}','${u.Celular}','${analiseHabilitada ? 'Não' : 'Sim'}',this)">${analiseHabilitada ? 'Desabilitar análise' : 'Habilitar análise'}</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function alterarStatus(ddi, celular, novoStatus, btnEl) {
+    btnEl.disabled = true;
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'toggle_usuario',
+          token: sessaoAtual.token,
+          ddi_alvo: ddi,
+          celular_alvo: celular,
+          ativo: novoStatus
+        })
+      });
+      const data = await resp.json();
+
+      if (data.ok) {
+        mostrarMensagem(novoStatus === 'Sim' ? 'Usuário ativado.' : 'Usuário desativado.', 'sucesso');
+        carregarUsuarios();
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível atualizar.', 'erro');
+        btnEl.disabled = false;
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão.', 'erro');
+      btnEl.disabled = false;
+    }
+  }
+
+  async function alterarAnalise(ddi, celular, novoAcesso, btnEl) {
+    btnEl.disabled = true;
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'toggle_analise',
+          token: sessaoAtual.token,
+          ddi_alvo: ddi,
+          celular_alvo: celular,
+          acesso: novoAcesso
+        })
+      });
+      const data = await resp.json();
+
+      if (data.ok) {
+        mostrarMensagem(novoAcesso === 'Sim' ? 'Acesso à análise habilitado.' : 'Acesso à análise desabilitado.', 'sucesso');
+        carregarUsuarios();
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível atualizar.', 'erro');
+        btnEl.disabled = false;
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão.', 'erro');
+      btnEl.disabled = false;
+    }
+  }
+
+  (function iniciar() {
+    sessaoAtual = iniciarPagina({ paginaAtiva: 'painel_admin.html', mostrarAbas: false, eyebrow: 'Painel Admin', somenteAdmin: true });
+    if (sessaoAtual) carregarUsuarios();
+  })();
+</script>
+</body>
+</html>
