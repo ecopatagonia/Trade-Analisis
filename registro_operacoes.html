@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Registro de Operações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+.filtros{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+.filtro{ font-family:'IBM Plex Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; padding:7px 14px; border:1px solid var(--linha-forte); background:var(--papel); cursor:pointer; color:var(--tinta-suave); }
+.filtro.ativo{ background:var(--tinta); color:var(--papel); font-weight:600; }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+.linha-filtro-data{ display:flex; align-items:center; gap:8px; }
+.linha-filtro-data label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); }
+.linha-filtro-data input[type="date"]{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:6px 10px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+.btn-limpar-data{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; background:none; border:1px solid var(--linha-forte); padding:6px 10px; cursor:pointer; color:var(--tinta-suave); }
+.btn-limpar-data:hover{ color:var(--vermelho-prejuizo); border-color:var(--vermelho-prejuizo); }
+
+/* seletor de janela temporal — linha própria, separada dos filtros de tipo */
+.janela-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:24px; padding-top:14px; border-top:1px dashed var(--linha-forte); }
+.janela-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px; }
+.janela-btn{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:7px 13px; border:1px solid var(--linha-forte); background:var(--papel-escuro); cursor:pointer; color:var(--tinta-suave); border-radius:2px; }
+.janela-btn.ativa{ background:var(--verde-lucro); color:var(--papel); border-color:var(--verde-lucro); font-weight:600; }
+.janela-datas{ display:none; gap:6px; align-items:center; margin-left:6px; }
+.janela-datas.show{ display:flex; }
+.janela-datas input{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:5px 8px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+
+/* grid de métricas de 4 colunas (Resumo / Qualidade / Risco) */
+.metricas-grid{ grid-template-columns:repeat(4, 1fr); margin-bottom:8px; }
+.metricas-grid .celula .val{ font-size:20px; }
+.metricas-grid .celula .sub{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--tinta-suave); margin-top:3px; }
+@media (max-width:720px){ .metricas-grid{ grid-template-columns:repeat(2, 1fr); } }
+
+/* gráficos */
+.chart-box{ border:1px solid var(--linha-forte); padding:20px; background:var(--papel-escuro); }
+.chart-legenda{ display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); }
+.chart-legenda span{ display:inline-flex; align-items:center; gap:6px; }
+.chart-legenda .dot{ width:10px; height:10px; display:inline-block; border-radius:2px; }
+.chart-legenda .linha-dash{ width:16px; height:0; border-top:1.5px dashed var(--tinta-suave); display:inline-block; }
+.chart-badge-n{ position:absolute; top:14px; left:56px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:700; color:var(--tinta); background:rgba(237,231,216,0.9); padding:4px 10px; border:1px solid var(--linha-forte); border-radius:2px; }
+.aviso-oculto{ border:1px dashed var(--linha-forte); padding:22px; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); background:var(--papel-escuro); }
+.vazio-selecao{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); padding:24px; text-align:center; border:1px dashed var(--linha-forte); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main id="conteudo" style="display:none;">
+
+    <section class="secao">
+      <div class="secao-header"><h2>Operações</h2><span class="n-amostra" id="n-total">—</span></div>
+
+      <div class="filtros">
+        <span class="filtro ativo" data-filtro="todas" onclick="aplicarFiltroTipo('todas', this)">Todas</span>
+        <span class="filtro" data-filtro="ganhadoras" onclick="aplicarFiltroTipo('ganhadoras', this)">Ganhadoras</span>
+        <span class="filtro" data-filtro="perdedoras" onclick="aplicarFiltroTipo('perdedoras', this)">Perdedoras</span>
+        <span class="filtro" data-filtro="long" onclick="aplicarFiltroTipo('long', this)">Long</span>
+        <span class="filtro" data-filtro="short" onclick="aplicarFiltroTipo('short', this)">Short</span>
+      </div>
+
+      <div class="janela-row">
+        <span class="janela-label">Período</span>
+        <span class="janela-btn" data-janela="ultimo_dia" onclick="selecionarJanela('ultimo_dia', this)">Último dia</span>
+        <span class="janela-btn" data-janela="semana" onclick="selecionarJanela('semana', this)">Semana</span>
+        <span class="janela-btn" data-janela="mes" onclick="selecionarJanela('mes', this)">Mês</span>
+        <span class="janela-btn" data-janela="7dias" onclick="selecionarJanela('7dias', this)">7 dias</span>
+        <span class="janela-btn" data-janela="30dias" onclick="selecionarJanela('30dias', this)">30 dias</span>
+        <span class="janela-btn" data-janela="ano" onclick="selecionarJanela('ano', this)">Ano</span>
+        <span class="janela-btn" data-janela="personalizado" onclick="selecionarJanela('personalizado', this)">Personalizado</span>
+        <div class="janela-datas" id="janela-datas">
+          <input type="date" id="data-inicio-custom" onchange="aoMudarPersonalizado()">
+          <span style="color:var(--tinta-suave);font-size:11px;">até</span>
+          <input type="date" id="data-fim-custom" onchange="aoMudarPersonalizado()">
+        </div>
+      </div>
+    </section>
+
+    <div id="area-resultados">
+      <!-- preenchido dinamicamente por renderizarTudo(): blocos de métricas, aviso n<30 e gráficos -->
+    </div>
+
+  </main>
+
+  <div class="carregando" id="carregando">Carregando operações...</div>
+
+  <footer>Dados ao vivo · atualizados a cada carregamento desta página</footer>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  let todosOsTrades = [];
+  let filtroTipo = 'todas';
+  let presetJanela = 'ultimo_dia';
+  let customInicio = null;
+  let customFim = null;
+
+  // ===================== CARGA INICIAL =====================
+
+  async function carregar() {
+    const sessao = iniciarPagina({ paginaAtiva: 'registro_operacoes.html', mostrarAbas: true });
+    if (!sessao) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessao.token));
+      const data = await resp.json();
+      if (!data.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + data.error;
+        return;
+      }
+      todosOsTrades = ordenarPorFecha(data.trades); // cronológico ascendente
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+      aplicarEDarRender();
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao buscar dados.';
+    }
+  }
+
+  // ===================== CONTROLES (filtro de tipo + janela temporal) =====================
+
+  function aplicarFiltroTipo(tipo, el) {
+    filtroTipo = tipo;
+    document.querySelectorAll('.filtro').forEach(f => f.classList.remove('ativo'));
+    el.classList.add('ativo');
+    aplicarEDarRender();
+  }
+
+  function selecionarJanela(preset, el) {
+    presetJanela = preset;
+    document.querySelectorAll('.janela-btn').forEach(b => b.classList.remove('ativa'));
+    el.classList.add('ativa');
+    const areaDatas = document.getElementById('janela-datas');
+    if (preset === 'personalizado') {
+      areaDatas.classList.add('show');
+      // só re-renderiza quando as duas datas estiverem preenchidas (ver aoMudarPersonalizado)
+      return;
+    }
+    areaDatas.classList.remove('show');
+    aplicarEDarRender();
+  }
+
+  function aoMudarPersonalizado() {
+    const ini = document.getElementById('data-inicio-custom').value;
+    const fim = document.getElementById('data-fim-custom').value;
+    if (!ini || !fim) return;
+    customInicio = new Date(ini + 'T00:00:00');
+    customFim = new Date(fim + 'T23:59:59');
+    aplicarEDarRender();
+  }
+
+  function filtrarPorTipo(trades, tipo) {
+    switch (tipo) {
+      case 'ganhadoras': return trades.filter(t => (Number(t['Resultado_R$']) || 0) >= 0);
+      case 'perdedoras': return trades.filter(t => (Number(t['Resultado_R$']) || 0) < 0);
+      case 'long': return trades.filter(t => t.Direccion === 'Long');
+      case 'short': return trades.filter(t => t.Direccion === 'Short');
+      default: return trades;
+    }
+  }
+
+  // ===================== ORQUESTRAÇÃO =====================
+
+  function aplicarEDarRender() {
+    // a janela usa SEMPRE todosOsTrades (não os já filtrados por tipo) para achar a
+    // última data operada e os limites do período — o filtro de tipo só reduz QUAIS
+    // operações entram nas métricas/gráficos dentro dessa janela.
+    const janela = calcularJanelaPreset(todosOsTrades, presetJanela, customInicio, customFim);
+    const areaResultados = document.getElementById('area-resultados');
+
+    if (!janela) {
+      document.getElementById('n-total').textContent = '—';
+      areaResultados.innerHTML = '<div class="vazio-selecao">Nenhuma operação registrada ainda.</div>';
+      return;
+    }
+
+    const dentroDaJanela = todosOsTrades.filter(t => {
+      const d = dataDoTrade(t);
+      return d >= janela.inicio && d <= janela.fim;
+    });
+    const filtrados = filtrarPorTipo(dentroDaJanela, filtroTipo);
+
+    document.getElementById('n-total').textContent = 'n = ' + filtrados.length + ' operações';
+    renderizarTudo(filtrados, janela);
+  }
+
+  // ===================== RENDERIZAÇÃO DOS BLOCOS DE MÉTRICAS + GRÁFICOS =====================
+
+  function renderizarTudo(filtrados, janela) {
+    const areaResultados = document.getElementById('area-resultados');
+
+    if (filtrados.length === 0) {
+      areaResultados.innerHTML = '<div class="vazio-selecao">Nenhuma operação nesta seleção.</div>';
+      return;
+    }
+
+    const diasArray = gerarSeriesDiarias(filtrados, janela.inicio, janela.fim);
+    const pregoesInfo = contarPregoesEOperados(diasArray);
+    const basico = calcularBasico(filtrados);
+    const amostraInsuficiente = basico.n < 30;
+
+    const mediaPorResultado = calcularMediaPorResultado(filtrados, 'Resultado_R$');
+    const payoff = (mediaPorResultado.ganhadoras.media !== null && mediaPorResultado.perdedoras.media)
+      ? mediaPorResultado.ganhadoras.media / Math.abs(mediaPorResultado.perdedoras.media)
+      : null;
+    const profitFactor = calcularProfitFactor(filtrados);
+    const desvio = desvioPadrao(filtrados.map(t => Number(t['Resultado_R$']) || 0));
+
+    const tradesOrdenados = ordenarPorFecha(filtrados);
+    const rachas = calcularRachaMaxima(tradesOrdenados);
+    const melhorPiorDia = melhorPiorPeriodo(filtrados, chaveDia);
+    const drawdown = calcularDrawdown(tradesOrdenados).maxDrawdown;
+    const mediaOperacoesPorDia = pregoesInfo.operados > 0 ? (basico.n / pregoesInfo.operados) : null;
+
+    let html = '';
+
+    // ---------- BLOCO 1: RESUMO DA SELEÇÃO ----------
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Resumo da seleção</h2></div>
+        <div class="grade metricas-grid">
+          <div class="celula"><div class="rot">Operações</div><div class="val">${basico.n}</div></div>
+          <div class="celula"><div class="rot">Dias operados</div><div class="val">${pregoesInfo.operados}</div><div class="sub">de ${pregoesInfo.pregoes} pregões no período</div></div>
+          <div class="celula"><div class="rot">Resultado total</div><div class="val ${basico.resultado >= 0 ? 'pos' : 'neg'}">${formatarReais(basico.resultado)}</div></div>
+          <div class="celula" style="border-right:none;"><div class="rot">Média de operações/dia</div><div class="val">${mediaOperacoesPorDia !== null ? mediaOperacoesPorDia.toFixed(1) : '—'}</div></div>
+        </div>
+      </section>`;
+
+    // ---------- AVISO DE AMOSTRA INSUFICIENTE ----------
+    if (amostraInsuficiente) {
+      html += `
+        <div class="nota-analista">
+          <strong>Amostra insuficiente</strong>
+          n = ${basico.n} operações nesta seleção (mínimo recomendado: 30). Os números de qualidade operacional e risco abaixo são apenas informativos — evite tirar conclusões estatísticas com uma amostra tão pequena.
+        </div>`;
+    }
+
+    // ---------- BLOCO 2: QUALIDADE OPERACIONAL ----------
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Qualidade operacional</h2></div>
+        <div class="grade metricas-grid">
+          <div class="celula"><div class="rot">Expectancy</div><div class="val ${basico.expectancy >= 0 ? 'pos' : 'neg'}">${formatarReais(basico.expectancy)}</div><div class="sub">por operação</div></div>
+          <div class="celula"><div class="rot">Profit factor</div><div class="val">${formatarProfitFactor(profitFactor)}</div></div>
+          <div class="celula"><div class="rot">Taxa de acerto</div><div class="val">${basico.winRate.toFixed(1)}%</div><div class="sub">breakeven conta como ganho</div></div>
+          <div class="celula" style="border-right:none;"><div class="rot">Payoff ratio</div><div class="val">${payoff !== null ? payoff.toFixed(2) : '—'}</div></div>
+          <div class="celula" style="grid-column:1/2;"><div class="rot">Ganho médio</div><div class="val pos">${mediaPorResultado.ganhadoras.media !== null ? formatarReais(mediaPorResultado.ganhadoras.media) : '—'}</div></div>
+          <div class="celula" style="grid-column:2/3;"><div class="rot">Perda média</div><div class="val neg">${mediaPorResultado.perdedoras.media !== null ? formatarReais(mediaPorResultado.perdedoras.media) : '—'}</div></div>
+          <div class="celula" style="border-right:none;grid-column:3/5;"><div class="rot">Desvio padrão por operação</div><div class="val">${desvio !== null ? formatarReais(desvio) : '—'}</div></div>
+        </div>
+      </section>`;
+
+    // ---------- BLOCO 3: RISCO E CONSISTÊNCIA ----------
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Risco e consistência</h2></div>
+        <div class="grade metricas-grid">
+          <div class="celula"><div class="rot">Maior sequência de ganhos</div><div class="val pos">${rachas.maxGanhos}</div></div>
+          <div class="celula"><div class="rot">Maior sequência de perdas</div><div class="val neg">${rachas.maxPerdas}</div></div>
+          <div class="celula"><div class="rot">Melhor dia</div><div class="val pos">${melhorPiorDia.melhor ? formatarReais(melhorPiorDia.melhor.valor) : '—'}</div></div>
+          <div class="celula" style="border-right:none;"><div class="rot">Pior dia</div><div class="val neg">${melhorPiorDia.pior ? formatarReais(melhorPiorDia.pior.valor) : '—'}</div></div>
+          <div class="celula" style="border-bottom:none;"><div class="rot">Drawdown máximo</div><div class="val neg">${formatarReais(-Math.abs(drawdown))}</div></div>
+          <div class="celula" style="border-bottom:none;"><div class="rot">Maior ganho individual</div><div class="val pos">${formatarReais(basico.melhor)}</div></div>
+          <div class="celula" style="border-right:none;border-bottom:none;grid-column:3/5;"><div class="rot">Maior perda individual</div><div class="val neg">${formatarReais(basico.pior)}</div></div>
+        </div>
+      </section>`;
+
+    // ---------- GRÁFICO 1: EVOLUÇÃO DIÁRIA ----------
+    const mediaAcumulada = calcularMediaAcumuladaDiaria(diasArray);
+    const { svg: svgBarras, legenda: legendaBarras } = renderizarGraficoBarras(diasArray, mediaAcumulada, pregoesInfo);
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Evolução diária</h2></div>
+        <p class="secao-intro">Cada dia da semana ocupa seu espaço, mesmo sem operação — dias sem operação não contam como "pregão operado". Fins de semana aparecem marcados como referência. A linha pontilhada marca a média acumulada do resultado diário — verde quando positiva, vermelha quando negativa.</p>
+        <div class="chart-box" style="position:relative; overflow-x:auto;">${svgBarras}${legendaBarras}</div>
+      </section>`;
+
+    // ---------- GRÁFICO 2: VALOR ACUMULADO ----------
+    const acumuladoDiario = calcularAcumuladoDiario(diasArray);
+    const { svg: svgAcumulado, legenda: legendaAcumulado } = renderizarGraficoAcumulado(diasArray, acumuladoDiario, pregoesInfo);
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Valor acumulado</h2></div>
+        <p class="secao-intro">Soma do resultado dia a dia dentro do período selecionado. A linha permanece estável nos dias sem operação e nos fins de semana.</p>
+        <div class="chart-box" style="position:relative; overflow-x:auto;">${svgAcumulado}${legendaAcumulado}</div>
+      </section>`;
+
+    // ---------- GRÁFICO 3: CURVA POR OPERAÇÃO (só até 30 dias corridos) ----------
+    // Comparamos início-do-dia a início-do-dia para não deixar o horário 23:59:59.999
+    // do fim do intervalo inflar a contagem em +1 dia por arredondamento.
+    const diasNaJanela = Math.round((inicioDoDia(janela.fim) - inicioDoDia(janela.inicio)) / 86400000) + 1;
+    html += `
+      <section class="secao">
+        <div class="secao-header"><h2>Curva por operação <span class="n-amostra">disponível para janelas de até 30 dias</span></h2></div>`;
+    if (diasNaJanela <= 30) {
+      html += `<p class="secao-intro">Cada ponto é uma operação, em ordem cronológica — verde quando o resultado está acima de zero, vermelho quando abaixo (breakeven conta como ganho). A linha sólida escura é a média do período; as linhas tracejadas marcam média ± 1 desvio padrão.</p>`;
+      const { svg: svgOperacoes, legenda: legendaOperacoes } = renderizarGraficoOperacoes(tradesOrdenados, basico.expectancy, desvio, pregoesInfo.operados);
+      html += `<div class="chart-box" style="overflow-x:auto;">${svgOperacoes}${legendaOperacoes}</div>`;
+    } else {
+      html += `<div class="aviso-oculto">Gráfico de curva por operação disponível apenas para janelas de até 30 dias — período atual (${diasNaJanela} dias) tem operações demais para uma leitura clara. Os gráficos de evolução diária e valor acumulado acima continuam disponíveis normalmente.</div>`;
+    }
+    html += `</section>`;
+
+    areaResultados.innerHTML = html;
+  }
+
+  // ===================== HELPERS DE FORMATAÇÃO (específicos desta página) =====================
+
+  function formatarProfitFactor(pf) {
+    if (pf === null) return '—';
+    if (pf === Infinity) return '∞';
+    return pf.toFixed(2);
+  }
+
+  function formatarReaisEixo(v) {
+    const sinal = v < 0 ? '-' : '';
+    const abs = Math.round(Math.abs(v));
+    return sinal + 'R$ ' + abs.toLocaleString('pt-BR');
+  }
+
+  // ===================== ESCALA AUTOMÁTICA DO EIXO Y =====================
+
+  function calcularEscalaAgradavel(minVal, maxVal, alvoLinhas) {
+    if (minVal === maxVal) { minVal -= 1; maxVal += 1; }
+    const intervaloBruto = (maxVal - minVal) / (alvoLinhas - 1);
+    const magnitude = Math.pow(10, Math.floor(Math.log10(intervaloBruto)));
+    const passosPossiveis = [1, 2, 2.5, 5, 10];
+    let passo = magnitude * 10;
+    for (const p of passosPossiveis) {
+      if (magnitude * p >= intervaloBruto) { passo = magnitude * p; break; }
+    }
+    const minAjustado = Math.floor(minVal / passo) * passo;
+    const maxAjustado = Math.ceil(maxVal / passo) * passo;
+    const linhas = [];
+    for (let v = minAjustado; v <= maxAjustado + 0.0001; v += passo) linhas.push(Math.round(v * 100) / 100);
+    return { min: minAjustado, max: maxAjustado, passo: passo, linhas: linhas };
+  }
+
+  // Gera polylines coloridas (verde/vermelho) dividindo exatamente no cruzamento pelo zero.
+  function gerarSegmentosColoridos(pontos, yZero, tracejado) {
+    if (pontos.length === 0) return '';
+    if (pontos.length === 1) {
+      const cor = pontos[0].y <= yZero ? '#3B6E4F' : '#A13D2E';
+      return `<circle cx="${pontos[0].x}" cy="${pontos[0].y}" r="3" fill="${cor}"/>`;
+    }
+    let svg = '';
+    const dash = tracejado ? ' stroke-dasharray="5,4"' : '';
+    for (let i = 0; i < pontos.length - 1; i++) {
+      const p1 = pontos[i], p2 = pontos[i + 1];
+      const sinal1 = p1.y <= yZero ? 1 : -1;
+      const sinal2 = p2.y <= yZero ? 1 : -1;
+      const cor1 = sinal1 === 1 ? '#3B6E4F' : '#A13D2E';
+      if (sinal1 === sinal2 || p1.y === p2.y) {
+        svg += `<polyline points="${p1.x},${p1.y} ${p2.x},${p2.y}" fill="none" stroke="${cor1}" stroke-width="1.8"${dash}/>`;
+      } else {
+        const t = (yZero - p1.y) / (p2.y - p1.y);
+        const xCruz = p1.x + t * (p2.x - p1.x);
+        svg += `<polyline points="${p1.x},${p1.y} ${xCruz},${yZero}" fill="none" stroke="${cor1}" stroke-width="1.8"${dash}/>`;
+        const cor2 = sinal2 === 1 ? '#3B6E4F' : '#A13D2E';
+        svg += `<polyline points="${xCruz},${yZero} ${p2.x},${p2.y}" fill="none" stroke="${cor2}" stroke-width="1.8"${dash}/>`;
+      }
+    }
+    return svg;
+  }
+
+  // ===================== GRÁFICO 1: BARRAS DIÁRIAS + MÉDIA ACUMULADA =====================
+
+  function renderizarGraficoBarras(diasArray, mediaAcumulada, pregoesInfo) {
+    const n = diasArray.length;
+    const margemEsquerda = 56;
+    const margemDireita = 20;
+    const alturaPlot = 220;
+    const colWidth = n <= 20 ? 42 : Math.max(6, Math.floor(900 / n));
+    const mostrarRotulos = colWidth >= 20;
+
+    const valoresOperados = diasArray.filter(d => d.temOperacao).map(d => d.resultadoDia);
+    const minVal = Math.min(0, ...(valoresOperados.length ? valoresOperados : [0]));
+    const maxVal = Math.max(0, ...(valoresOperados.length ? valoresOperados : [0]));
+    const escala = calcularEscalaAgradavel(minVal, maxVal, 5);
+    const pxPorUnidade = alturaPlot / (escala.max - escala.min);
+
+    function yDoValor(v) { return alturaPlot - (v - escala.min) * pxPorUnidade; }
+    const yZero = yDoValor(0);
+
+    const larguraSvg = margemEsquerda + n * colWidth + margemDireita;
+    const alturaLabels = mostrarRotulos ? 34 : 8;
+    const alturaSvg = alturaPlot + alturaLabels + 10;
+
+    let svg = `<svg viewBox="0 0 ${larguraSvg} ${alturaSvg}" width="${Math.max(larguraSvg, 300)}" height="${alturaSvg}">`;
+
+    escala.linhas.forEach(v => {
+      const y = yDoValor(v);
+      svg += `<line x1="${margemEsquerda}" y1="${y}" x2="${larguraSvg - margemDireita}" y2="${y}" stroke="${v === 0 ? '#AFA689' : '#D8D0BC'}" stroke-width="${v === 0 ? 1.3 : 1}"/>`;
+      svg += `<text x="${margemEsquerda - 6}" y="${y + 3}" text-anchor="end" font-family="IBM Plex Mono" font-size="9" fill="#5B5A47">${formatarReaisEixo(v)}</text>`;
+    });
+
+    diasArray.forEach((dia, i) => {
+      const x = margemEsquerda + i * colWidth;
+      if (dia.ehFimDeSemana) {
+        svg += `<rect x="${x}" y="0" width="${colWidth}" height="${alturaPlot}" fill="#A13D2E" opacity="0.08"/>`;
+      } else if (dia.temOperacao) {
+        const yValor = yDoValor(dia.resultadoDia);
+        const y1 = Math.min(yValor, yZero);
+        const altura = Math.max(Math.abs(yValor - yZero), 1);
+        const cor = dia.resultadoDia >= 0 ? '#3B6E4F' : '#A13D2E';
+        const padding = colWidth > 4 ? 1 : 0;
+        svg += `<rect x="${x + padding}" y="${y1}" width="${colWidth - padding * 2}" height="${altura}" fill="${cor}" stroke="#EDE7D8" stroke-width="${colWidth > 10 ? 1 : 0}"/>`;
+      }
+      if (mostrarRotulos) {
+        const diaMes = String(dia.data.getDate()).padStart(2, '0') + '/' + String(dia.data.getMonth() + 1).padStart(2, '0');
+        const corTexto = dia.temOperacao ? '#22281F' : '#B8A98A';
+        svg += `<text x="${x + colWidth / 2}" y="${alturaPlot + 16}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="${corTexto}">${diaMes}</text>`;
+      }
+    });
+
+    const pontosMedia = [];
+    diasArray.forEach((dia, i) => {
+      if (mediaAcumulada[i] !== null) {
+        pontosMedia.push({ x: margemEsquerda + i * colWidth + colWidth / 2, y: yDoValor(mediaAcumulada[i]) });
+      }
+    });
+    svg += gerarSegmentosColoridos(pontosMedia, yZero, true);
+
+    svg += '</svg>';
+
+    const legenda = `
+      <div class="chart-badge-n">${pregoesInfo.operados} dias operados em ${pregoesInfo.pregoes} pregões</div>
+      <div class="chart-legenda">
+        <span><span class="dot" style="background:#3B6E4F;"></span> Dia positivo</span>
+        <span><span class="dot" style="background:#A13D2E;"></span> Dia negativo</span>
+        <span><span class="dot" style="background:#A13D2E;opacity:0.25;"></span> Fim de semana</span>
+        <span><span class="linha-dash" style="border-top-color:#3B6E4F;"></span> Média acumulada (verde = positiva)</span>
+        <span><span class="linha-dash" style="border-top-color:#A13D2E;"></span> Média acumulada (vermelha = negativa)</span>
+      </div>`;
+
+    return { svg, legenda };
+  }
+
+  // ===================== GRÁFICO 2: VALOR ACUMULADO =====================
+
+  function renderizarGraficoAcumulado(diasArray, acumulado, pregoesInfo) {
+    const n = diasArray.length;
+    const margemEsquerda = 56;
+    const margemDireita = 60;
+    const alturaPlot = 200;
+    const colWidth = n <= 20 ? 42 : Math.max(6, Math.floor(900 / n));
+    const mostrarRotulos = colWidth >= 20;
+
+    const minVal = Math.min(0, ...acumulado);
+    const maxVal = Math.max(0, ...acumulado);
+    const escala = calcularEscalaAgradavel(minVal, maxVal, 5);
+    const pxPorUnidade = alturaPlot / (escala.max - escala.min);
+    function yDoValor(v) { return alturaPlot - (v - escala.min) * pxPorUnidade; }
+
+    const larguraSvg = margemEsquerda + n * colWidth + margemDireita;
+    const alturaLabels = mostrarRotulos ? 26 : 8;
+    const alturaSvg = alturaPlot + alturaLabels + 10;
+
+    let svg = `<svg viewBox="0 0 ${larguraSvg} ${alturaSvg}" width="${Math.max(larguraSvg, 300)}" height="${alturaSvg}">`;
+
+    escala.linhas.forEach(v => {
+      const y = yDoValor(v);
+      svg += `<line x1="${margemEsquerda}" y1="${y}" x2="${larguraSvg - margemDireita}" y2="${y}" stroke="${v === 0 ? '#AFA689' : '#D8D0BC'}" stroke-width="${v === 0 ? 1.3 : 1}"/>`;
+      svg += `<text x="${margemEsquerda - 6}" y="${y + 3}" text-anchor="end" font-family="IBM Plex Mono" font-size="9" fill="#5B5A47">${formatarReaisEixo(v)}</text>`;
+    });
+
+    diasArray.forEach((dia, i) => {
+      if (dia.ehFimDeSemana) {
+        const x = margemEsquerda + i * colWidth;
+        svg += `<rect x="${x}" y="0" width="${colWidth}" height="${alturaPlot}" fill="#A13D2E" opacity="0.06"/>`;
+      }
+    });
+
+    const pontos = diasArray.map((dia, i) => ({
+      x: margemEsquerda + i * colWidth + colWidth / 2,
+      y: yDoValor(acumulado[i])
+    }));
+    const pathPoints = pontos.map(p => `${p.x},${p.y}`).join(' ');
+    svg += `<polyline points="${pathPoints}" fill="none" stroke="#3B6E4F" stroke-width="2"/>`;
+
+    // bolinha em cada dia com operação, colorida conforme o resultado daquele dia
+    // (breakeven conta como ganho, por isso >=0 é verde — mesma regra do resto do projeto)
+    diasArray.forEach((dia, i) => {
+      if (dia.temOperacao) {
+        const cor = dia.resultadoDia >= 0 ? '#3B6E4F' : '#A13D2E';
+        svg += `<circle cx="${pontos[i].x}" cy="${pontos[i].y}" r="3.5" fill="${cor}" stroke="#EDE7D8" stroke-width="1"/>`;
+      }
+    });
+
+    const ultimo = pontos[pontos.length - 1];
+    const ultimoValor = acumulado[acumulado.length - 1];
+    const corFinal = ultimoValor >= 0 ? '#3B6E4F' : '#A13D2E';
+    svg += `<circle cx="${ultimo.x}" cy="${ultimo.y}" r="4" fill="${corFinal}"/>`;
+    svg += `<text x="${Math.min(ultimo.x + 8, larguraSvg - margemDireita)}" y="${ultimo.y + 4}" text-anchor="start" font-family="IBM Plex Mono" font-size="10" fill="${corFinal}" font-weight="600">${formatarReaisEixo(ultimoValor)}</text>`;
+
+    if (mostrarRotulos) {
+      const passoLabel = Math.max(1, Math.round(n / 5));
+      diasArray.forEach((dia, i) => {
+        if (i % passoLabel === 0 || i === n - 1) {
+          const diaMes = String(dia.data.getDate()).padStart(2, '0') + '/' + String(dia.data.getMonth() + 1).padStart(2, '0');
+          svg += `<text x="${margemEsquerda + i * colWidth + colWidth / 2}" y="${alturaPlot + 16}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#5B5A47">${diaMes}</text>`;
+        }
+      });
+    }
+
+    svg += '</svg>';
+
+    const legenda = `
+      <div class="chart-badge-n">${pregoesInfo.operados} dias operados em ${pregoesInfo.pregoes} pregões</div>
+      <div class="chart-legenda">
+        <span><span class="dot" style="background:#3B6E4F;"></span> Dia positivo</span>
+        <span><span class="dot" style="background:#A13D2E;"></span> Dia negativo</span>
+        <span>Linha: resultado acumulado no período</span>
+      </div>`;
+
+    return { svg, legenda };
+  }
+
+  // ===================== GRÁFICO 3: CURVA POR OPERAÇÃO =====================
+
+  function renderizarGraficoOperacoes(tradesOrdenados, mediaOperacao, desvio, pregoesOperados) {
+    const valores = tradesOrdenados.map(t => Number(t['Resultado_R$']) || 0);
+    const n = valores.length;
+    const margemEsquerda = 56;
+    const margemDireita = 70;
+    const colWidth = n <= 1 ? 200 : Math.max(8, Math.min(45, Math.floor(900 / n)));
+
+    const desvioSeguro = desvio || 0;
+    const minVal = Math.min(...valores, mediaOperacao - desvioSeguro);
+    const maxVal = Math.max(...valores, mediaOperacao + desvioSeguro);
+    const escala = calcularEscalaAgradavel(minVal, maxVal, 5);
+    const rangeTotal = escala.max - escala.min;
+
+    // Altura automática: garante que a faixa de ±1 desvio padrão sempre tenha uma
+    // espessura mínima legível na tela, mesmo quando um outlier alonga muito a escala.
+    const bandaSigma = desvioSeguro * 2;
+    let alturaPlot = 200;
+    if (bandaSigma > 0 && rangeTotal > 0) {
+      const pxPorUnidadeMinParaBanda = 60 / bandaSigma; // mínimo de 60px de altura para a faixa de 2σ
+      const alturaNecessaria = pxPorUnidadeMinParaBanda * rangeTotal;
+      alturaPlot = Math.min(650, Math.max(200, alturaNecessaria));
+    }
+
+    const pxPorUnidade = alturaPlot / rangeTotal;
+    function yDoValor(v) { return alturaPlot - (v - escala.min) * pxPorUnidade; }
+    const yZero = yDoValor(0);
+
+    const larguraSvg = margemEsquerda + n * colWidth + margemDireita;
+    const alturaSvg = alturaPlot + 20;
+
+    let svg = `<svg viewBox="0 0 ${larguraSvg} ${alturaSvg}" width="${Math.max(larguraSvg, 300)}" height="${alturaSvg}">`;
+
+    escala.linhas.forEach(v => {
+      const y = yDoValor(v);
+      svg += `<line x1="${margemEsquerda}" y1="${y}" x2="${larguraSvg - margemDireita}" y2="${y}" stroke="${v === 0 ? '#AFA689' : '#D8D0BC'}" stroke-width="${v === 0 ? 1.3 : 1}"/>`;
+      svg += `<text x="${margemEsquerda - 6}" y="${y + 3}" text-anchor="end" font-family="IBM Plex Mono" font-size="9" fill="#5B5A47">${formatarReaisEixo(v)}</text>`;
+    });
+
+    if (desvio !== null) {
+      const ySuperior = yDoValor(mediaOperacao + desvioSeguro);
+      const yInferior = yDoValor(mediaOperacao - desvioSeguro);
+      svg += `<rect x="${margemEsquerda}" y="${Math.min(ySuperior, yInferior)}" width="${larguraSvg - margemEsquerda - margemDireita}" height="${Math.abs(yInferior - ySuperior)}" fill="#5B5A47" opacity="0.08"/>`;
+      svg += `<line x1="${margemEsquerda}" y1="${ySuperior}" x2="${larguraSvg - margemDireita}" y2="${ySuperior}" stroke="#5B5A47" stroke-width="1" stroke-dasharray="4,4"/>`;
+      svg += `<text x="${larguraSvg - margemDireita + 5}" y="${ySuperior + 3}" font-family="IBM Plex Mono" font-size="9" fill="#5B5A47">+1σ · ${formatarReaisEixo(mediaOperacao + desvioSeguro)}</text>`;
+      svg += `<line x1="${margemEsquerda}" y1="${yInferior}" x2="${larguraSvg - margemDireita}" y2="${yInferior}" stroke="#5B5A47" stroke-width="1" stroke-dasharray="4,4"/>`;
+      svg += `<text x="${larguraSvg - margemDireita + 5}" y="${yInferior + 3}" font-family="IBM Plex Mono" font-size="9" fill="#5B5A47">-1σ · ${formatarReaisEixo(mediaOperacao - desvioSeguro)}</text>`;
+    }
+    const yMedia = yDoValor(mediaOperacao);
+    svg += `<line x1="${margemEsquerda}" y1="${yMedia}" x2="${larguraSvg - margemDireita}" y2="${yMedia}" stroke="#22281F" stroke-width="1.5"/>`;
+    svg += `<text x="${larguraSvg - margemDireita + 5}" y="${yMedia + 3}" font-family="IBM Plex Mono" font-size="9" fill="#22281F">média · ${formatarReaisEixo(mediaOperacao)}</text>`;
+
+    const pontos = valores.map((v, i) => ({ x: margemEsquerda + i * colWidth + colWidth / 2, y: yDoValor(v) }));
+    svg += gerarSegmentosColoridos(pontos, yZero, false);
+    pontos.forEach((p, i) => {
+      const cor = valores[i] >= 0 ? '#3B6E4F' : '#A13D2E';
+      svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${cor}"/>`;
+    });
+
+    svg += '</svg>';
+
+    const legenda = `
+      <div class="chart-legenda">
+        <span><span class="dot" style="background:#3B6E4F;"></span> Operação positiva</span>
+        <span><span class="dot" style="background:#A13D2E;"></span> Operação negativa</span>
+        <span><span class="linha-dash"></span> Média ± 1 desvio padrão</span>
+        <span style="font-weight:700;color:#22281F;">${n} operações em ${pregoesOperados} pregões operados</span>
+      </div>`;
+
+    return { svg, legenda };
+  }
+
+  carregar();
+</script>
+</body>
+</html>
