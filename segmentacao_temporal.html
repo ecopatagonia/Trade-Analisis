@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Segmentação Temporal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Por hora de abertura</h2><span class="n-amostra">acumulado total</span></div>
+      <table class="planilha">
+        <thead><tr><th>Hora</th><th>n</th><th>Resultado</th><th>Win rate</th><th>Expectancy</th></tr></thead>
+        <tbody>
+          <tr><td>09h</td><td>184</td><td style="color:var(--vermelho-prejuizo)">-R$ 6.161,00</td><td>56,5%</td><td style="color:var(--vermelho-prejuizo)">-R$ 33,48</td></tr>
+          <tr><td>10h</td><td>372</td><td style="color:var(--verde-lucro)">R$ 11.947,00</td><td>74,7%</td><td style="color:var(--verde-lucro)">R$ 32,12</td></tr>
+          <tr><td>11h</td><td>106</td><td style="color:var(--vermelho-prejuizo)">-R$ 25.374,00</td><td>71,7%</td><td style="color:var(--vermelho-prejuizo)">-R$ 239,38</td></tr>
+          <tr><td>12h</td><td>38</td><td style="color:var(--verde-lucro)">R$ 5.265,00</td><td>71,1%</td><td style="color:var(--verde-lucro)">R$ 138,55</td></tr>
+          <tr><td>13h</td><td>43</td><td style="color:var(--verde-lucro)">R$ 23.020,00</td><td>76,7%</td><td style="color:var(--verde-lucro)">R$ 535,35</td></tr>
+          <tr><td>14h <span class="badge-alerta-n">n baixo</span></td><td>29</td><td style="color:var(--vermelho-prejuizo)">-R$ 14.463,00</td><td>82,8%</td><td style="color:var(--vermelho-prejuizo)">-R$ 498,72</td></tr>
+          <tr><td>15h <span class="badge-alerta-n">n baixo</span></td><td>19</td><td style="color:var(--vermelho-prejuizo)">-R$ 5.278,00</td><td>68,4%</td><td style="color:var(--vermelho-prejuizo)">-R$ 277,79</td></tr>
+          <tr><td>16h <span class="badge-alerta-n">n baixo</span></td><td>12</td><td style="color:var(--verde-lucro)">R$ 5.488,00</td><td>58,3%</td><td style="color:var(--verde-lucro)">R$ 457,33</td></tr>
+          <tr><td>17h <span class="badge-alerta-n">n baixo</span></td><td>13</td><td style="color:var(--verde-lucro)">R$ 2.010,00</td><td>69,2%</td><td style="color:var(--verde-lucro)">R$ 154,62</td></tr>
+          <tr><td>18h <span class="badge-alerta-n">n baixo</span></td><td>1</td><td style="color:var(--vermelho-prejuizo)">-R$ 10,00</td><td>0,0%</td><td style="color:var(--vermelho-prejuizo)">-R$ 10,00</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        As três faixas com volume real (09h, 10h, 11h — juntas, 81% de todas as operações) contam
+        histórias opostas: 10h é sua franja mais sólida e positiva, enquanto 11h é a mais destrutiva
+        de todo o dia (-R$ 239,38 de expectancy, com n=106, amostra confiável). 14h em diante tem
+        dado insuficiente para qualquer conclusão — não decida nada com base nesses números ainda.
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Por dia da semana</h2></div>
+      <table class="planilha">
+        <thead><tr><th>Dia</th><th>n</th><th>Resultado</th><th>Win rate</th><th>Expectancy</th></tr></thead>
+        <tbody>
+          <tr><td>Segunda</td><td>150</td><td style="color:var(--vermelho-prejuizo)">-R$ 16.991,00</td><td>74,7%</td><td style="color:var(--vermelho-prejuizo)">-R$ 113,27</td></tr>
+          <tr><td>Terça</td><td>188</td><td style="color:var(--verde-lucro)">R$ 15.655,00</td><td>66,0%</td><td style="color:var(--verde-lucro)">R$ 83,27</td></tr>
+          <tr><td>Quarta</td><td>168</td><td style="color:var(--vermelho-prejuizo)">-R$ 29.358,00</td><td>66,1%</td><td style="color:var(--vermelho-prejuizo)">-R$ 174,75</td></tr>
+          <tr><td>Quinta</td><td>159</td><td style="color:var(--vermelho-prejuizo)">-R$ 7.513,00</td><td>73,6%</td><td style="color:var(--vermelho-prejuizo)">-R$ 47,25</td></tr>
+          <tr><td>Sexta</td><td>152</td><td style="color:var(--verde-lucro)">R$ 34.651,00</td><td>70,4%</td><td style="color:var(--verde-lucro)">R$ 227,97</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        Todos os dias têm amostra sólida (n ≥ 150) — a diferença entre quarta (-R$ 174,75 de
+        expectancy) e sexta (R$ 227,97) não é ruído. Vale entender o que muda operacionalmente
+        no meio da semana.
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Por duração da operação</h2></div>
+      <table class="planilha">
+        <thead><tr><th>Duração</th><th>n</th><th>Resultado</th><th>Win rate</th><th>Expectancy</th></tr></thead>
+        <tbody>
+          <tr><td>0-2min</td><td>285</td><td style="color:var(--verde-lucro)">R$ 16.457,00</td><td>76,5%</td><td style="color:var(--verde-lucro)">R$ 57,74</td></tr>
+          <tr><td>2-5min</td><td>156</td><td style="color:var(--verde-lucro)">R$ 3.550,00</td><td>66,0%</td><td style="color:var(--verde-lucro)">R$ 22,76</td></tr>
+          <tr><td>5-15min</td><td>175</td><td style="color:var(--verde-lucro)">R$ 2.190,00</td><td>66,9%</td><td style="color:var(--verde-lucro)">R$ 12,51</td></tr>
+          <tr><td>15-30min</td><td>95</td><td style="color:var(--verde-lucro)">R$ 12.141,00</td><td>66,3%</td><td style="color:var(--verde-lucro)">R$ 127,80</td></tr>
+          <tr><td>30-60min</td><td>50</td><td style="color:var(--vermelho-prejuizo)">-R$ 15.276,00</td><td>70,0%</td><td style="color:var(--vermelho-prejuizo)">-R$ 305,52</td></tr>
+          <tr><td>1-2h</td><td>32</td><td style="color:var(--verde-lucro)">R$ 14.290,00</td><td>71,9%</td><td style="color:var(--verde-lucro)">R$ 446,56</td></tr>
+          <tr><td>&gt;2h <span class="badge-alerta-n">n baixo</span></td><td>24</td><td style="color:var(--vermelho-prejuizo)">-R$ 36.908,00</td><td>50,0%</td><td style="color:var(--vermelho-prejuizo)">-R$ 1.537,83</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        O bucket &gt;2h é o pior de todo o histórico (-R$ 1.537,83 de expectancy) e, mesmo com n=24
+        (abaixo do limiar de confiança), o tamanho do efeito é grande demais para ignorar — sozinho,
+        esse bucket concentra -R$ 36.908,00, mais que todo o drawdown de uma semana ruim.
+        30-60min também é negativo com n=50, sólido. Contraste direto: operações de 0-2min (76,5%
+        win rate) são sua faixa mais numerosa e mais saudável — o padrão sugere que operações que
+        "deveriam" ter sido fechadas rápido e não foram é onde o dinheiro se perde.
+      </div>
+    </section>
+
+  </main>
+
+  <footer>Dados reais extraídos do CSV carregado · 12/01/2026 – 03/07/2026</footer>
+
+
+<script src="nav.js"></script>
+<script>iniciarPagina({ paginaAtiva: 'segmentacao_temporal.html', mostrarAbas: true, eyebrow: 'Segmentação Temporal' });</script>
+</body>
+</html>

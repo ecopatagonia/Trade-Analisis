@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+body{ display:flex; flex-direction:column; min-height:100vh; }
+.tela-login{ flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+.cartao-login{ width:100%; max-width:420px; border:1px solid var(--linha-forte); background:rgba(255,255,255,0.4); padding:38px 34px; }
+.login-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:8px; text-align:center; }
+.login-titulo{ font-family:'Fraunces', serif; font-weight:700; font-size:26px; text-align:center; margin-bottom:30px; }
+.campo-login{ margin-bottom:20px; }
+.campo-login label{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); margin-bottom:7px; }
+.campo-login input, .campo-login select{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:15px; padding:12px 13px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+.campo-login input:focus, .campo-login select:focus{ outline:none; border-color:var(--verde-lucro); }
+.linha-celular{ display:grid; grid-template-columns:150px 1fr; gap:10px; }
+.ajuda-senha{ font-size:11.5px; color:var(--tinta-suave); margin-top:6px; }
+.btn-entrar{ width:100%; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:14px; letter-spacing:0.04em; text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:14px; cursor:pointer; margin-top:6px; }
+.btn-entrar:hover{ background:var(--verde-lucro); }
+.btn-entrar:disabled{ opacity:0.6; cursor:default; }
+.link-cadastro{ text-align:center; margin-top:22px; font-size:13.5px; color:var(--tinta-suave); }
+.link-cadastro a{ color:var(--verde-lucro); font-weight:600; text-decoration:none; }
+.link-cadastro a:hover{ text-decoration:underline; }
+.msg-erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); border-left:3px solid var(--vermelho-prejuizo); padding:11px 14px; font-size:13px; margin-bottom:18px; display:none; }
+</style>
+</head>
+<body>
+
+  <header class="membrete">
+    <div>
+      <div class="membrete-eyebrow">Sistema de Acompanhamento</div>
+      <div class="membrete-marca">Rumo aos 200.000</div>
+    </div>
+  </header>
+
+  <div class="tela-login">
+    <div class="cartao-login">
+      <div class="login-eyebrow">Acesso restrito</div>
+      <div class="login-titulo">Entrar</div>
+
+      <div class="msg-erro" id="msg-erro"></div>
+
+      <form onsubmit="return false;">
+        <div class="campo-login">
+          <label>Celular</label>
+          <div class="linha-celular">
+            <select id="ddi">
+<option value="55" selected>🇧🇷 Brasil (+55)</option>
+<option value="54">🇦🇷 Argentina (+54)</option>
+<option value="598">🇺🇾 Uruguai (+598)</option>
+<option value="595">🇵🇾 Paraguai (+595)</option>
+<option value="56">🇨🇱 Chile (+56)</option>
+<option value="591">🇧🇴 Bolívia (+591)</option>
+<option value="51">🇵🇪 Peru (+51)</option>
+<option value="57">🇨🇴 Colômbia (+57)</option>
+<option value="593">🇪🇨 Equador (+593)</option>
+<option value="58">🇻🇪 Venezuela (+58)</option>
+<option value="1">🇺🇸 Estados Unidos / Canadá (+1)</option>
+<option value="52">🇲🇽 México (+52)</option>
+<option value="351">🇵🇹 Portugal (+351)</option>
+<option value="34">🇪🇸 Espanha (+34)</option>
+<option value="33">🇫🇷 França (+33)</option>
+<option value="39">🇮🇹 Itália (+39)</option>
+<option value="49">🇩🇪 Alemanha (+49)</option>
+<option value="44">🇬🇧 Reino Unido (+44)</option>
+<option value="31">🇳🇱 Holanda (+31)</option>
+<option value="41">🇨🇭 Suíça (+41)</option>
+<option value="43">🇦🇹 Áustria (+43)</option>
+<option value="32">🇧🇪 Bélgica (+32)</option>
+<option value="46">🇸🇪 Suécia (+46)</option>
+<option value="47">🇳🇴 Noruega (+47)</option>
+<option value="45">🇩🇰 Dinamarca (+45)</option>
+<option value="358">🇫🇮 Finlândia (+358)</option>
+<option value="353">🇮🇪 Irlanda (+353)</option>
+<option value="48">🇵🇱 Polônia (+48)</option>
+<option value="30">🇬🇷 Grécia (+30)</option>
+<option value="7">🇷🇺 Rússia (+7)</option>
+<option value="90">🇹🇷 Turquia (+90)</option>
+<option value="971">🇦🇪 Emirados Árabes (+971)</option>
+<option value="972">🇮🇱 Israel (+972)</option>
+<option value="966">🇸🇦 Arábia Saudita (+966)</option>
+<option value="20">🇪🇬 Egito (+20)</option>
+<option value="27">🇿🇦 África do Sul (+27)</option>
+<option value="234">🇳🇬 Nigéria (+234)</option>
+<option value="212">🇲🇦 Marrocos (+212)</option>
+<option value="91">🇮🇳 Índia (+91)</option>
+<option value="86">🇨🇳 China (+86)</option>
+<option value="81">🇯🇵 Japão (+81)</option>
+<option value="82">🇰🇷 Coreia do Sul (+82)</option>
+<option value="65">🇸🇬 Singapura (+65)</option>
+<option value="852">🇭🇰 Hong Kong (+852)</option>
+<option value="66">🇹🇭 Tailândia (+66)</option>
+<option value="63">🇵🇭 Filipinas (+63)</option>
+<option value="62">🇮🇩 Indonésia (+62)</option>
+<option value="60">🇲🇾 Malásia (+60)</option>
+<option value="84">🇻🇳 Vietnã (+84)</option>
+<option value="61">🇦🇺 Austrália (+61)</option>
+<option value="64">🇳🇿 Nova Zelândia (+64)</option>
+<option value="380">🇺🇦 Ucrânia (+380)</option>
+<option value="420">🇨🇿 República Tcheca (+420)</option>
+<option value="36">🇭🇺 Hungria (+36)</option>
+<option value="40">🇷🇴 Romênia (+40)</option>
+<option value="385">🇭🇷 Croácia (+385)</option>
+<option value="506">🇨🇷 Costa Rica (+506)</option>
+<option value="507">🇵🇦 Panamá (+507)</option>
+<option value="503">🇸🇻 El Salvador (+503)</option>
+<option value="502">🇬🇹 Guatemala (+502)</option>
+<option value="504">🇭🇳 Honduras (+504)</option>
+<option value="505">🇳🇮 Nicarágua (+505)</option>
+<option value="53">🇨🇺 Cuba (+53)</option>
+<option value="1809">🇩🇴 República Dominicana (+1809)</option>
+
+            </select>
+            <input type="tel" id="celular" inputmode="numeric" placeholder="DDD + número">
+          </div>
+        </div>
+        <div class="campo-login">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" inputmode="numeric" maxlength="12" placeholder="••••">
+          <div class="ajuda-senha">Somente números, mínimo 4 dígitos</div>
+        </div>
+        <button type="button" class="btn-entrar" id="btn-entrar" onclick="fazerLogin()">Entrar</button>
+      </form>
+
+      <div class="link-cadastro">Ainda não tem cadastro? <a href="cadastro.html">Criar conta</a></div>
+    </div>
+  </div>
+
+  <footer>Acesso restrito aos participantes do grupo · dados individuais, visíveis apenas para cada usuário</footer>
+
+<script>
+  const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB1-iOU9RsH4k1jRPFGyvHOah_H5tlIa3VixAep13B4JrgeXpRaZujMoA5CROWQEpazg/exec';
+
+  document.getElementById('celular').addEventListener('input', function(e){
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+  document.getElementById('senha').addEventListener('input', function(e){
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+
+  function mostrarErro(msg){
+    const el = document.getElementById('msg-erro');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function fazerLogin(){
+    const ddi = document.getElementById('ddi').value;
+    const celular = document.getElementById('celular').value;
+    const senha = document.getElementById('senha').value;
+    const btn = document.getElementById('btn-entrar');
+
+    document.getElementById('msg-erro').style.display = 'none';
+
+    if(!celular || !senha){
+      mostrarErro('Preencha celular e senha.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({ action: 'login', ddi: ddi, celular: celular, senha: senha })
+      });
+      const data = await resp.json();
+
+      if(data.ok){
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('nome', data.nome);
+        localStorage.setItem('rol', data.rol);
+        localStorage.setItem('ddi', ddi);
+        localStorage.setItem('celular', celular);
+        window.location.href = 'portal.html';
+      } else {
+        mostrarErro(data.error || 'Não foi possível entrar.');
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    } catch(err){
+      mostrarErro('Erro de conexão. Tente novamente.');
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  }
+</script>
+</body>
+</html>

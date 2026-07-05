@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Direção &amp; Instrumento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+.grade2{grid-template-columns:repeat(2,1fr);}</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Long (compra) vs. Short (venda)</h2></div>
+      <table class="planilha">
+        <thead><tr><th>Direção</th><th>n</th><th>Resultado</th><th>Win rate</th><th>Expectancy</th></tr></thead>
+        <tbody>
+          <tr><td>Long (C)</td><td>496</td><td style="color:var(--vermelho-prejuizo)">-R$ 30.994,00</td><td>68,3%</td><td style="color:var(--vermelho-prejuizo)">-R$ 62,49</td></tr>
+          <tr><td>Short (V)</td><td>321</td><td style="color:var(--verde-lucro)">R$ 27.438,00</td><td>72,3%</td><td style="color:var(--verde-lucro)">R$ 85,48</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        Diferença grande e com amostra sólida nos dois lados (n=496 e n=321). Você opera mais
+        vezes comprado (Long), mas é vendido (Short) que sua expectancy é positiva. Vale entender
+        se é viés de mercado do período (tendência de baixa predominante) ou um padrão de leitura
+        mais consistente na ponta vendedora.
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Por contrato / vencimento</h2><span class="n-amostra">WIN (normalizado)</span></div>
+      <table class="planilha">
+        <thead><tr><th>Contrato</th><th>n</th><th>Resultado</th><th>Win rate</th><th>Expectancy</th></tr></thead>
+        <tbody>
+          <tr><td>WING26</td><td>52</td><td style="color:var(--vermelho-prejuizo)">-R$ 2.819,00</td><td>75,0%</td><td style="color:var(--vermelho-prejuizo)">-R$ 54,21</td></tr>
+          <tr><td>WINJ26</td><td>253</td><td style="color:var(--verde-lucro)">R$ 25.740,00</td><td>75,9%</td><td style="color:var(--verde-lucro)">R$ 101,74</td></tr>
+          <tr><td>WINM26</td><td>437</td><td style="color:var(--vermelho-prejuizo)">-R$ 42.189,00</td><td>63,8%</td><td style="color:var(--vermelho-prejuizo)">-R$ 96,54</td></tr>
+          <tr><td>WINQ26</td><td>75</td><td style="color:var(--verde-lucro)">R$ 15.712,00</td><td>81,3%</td><td style="color:var(--verde-lucro)">R$ 209,49</td></tr>
+        </tbody>
+      </table>
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        WINM26 (vencimento de junho) concentra o pior resultado (-R$ 42.189,00) — e é exatamente
+        o período em que a Curva de Resultado &amp; Risco mostra o drawdown máximo (15-16/06).
+        Não são dois achados separados: é o mesmo evento aparecendo em três cortes diferentes
+        (mês, vencimento e drawdown). WINQ26 (vencimento atual) tem a melhor expectancy de todas
+        (R$ 209,49), mas com n=75 ainda é cedo para saber se é um padrão novo ou só o começo de uma
+        amostra pequena.
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Placeholder — futuros instrumentos</h2></div>
+      <div class="grade grade2">
+        <div class="celula"><div class="rot">WIN (futuros de índice)</div><div class="val" style="font-size:17px;">817 operações registradas</div></div>
+        <div class="celula" style="border-right:none;"><div class="rot">WDO (futuros de dólar)</div><div class="val num neutro" style="font-size:17px;">Sem dados ainda</div></div>
+      </div>
+      <div class="secao-intro">Campo pronto na estrutura de dados (Familia_Instrumento) para quando as primeiras operações de dólar forem carregadas — não é necessário migrar nada nesse momento.</div>
+    </section>
+
+  </main>
+
+  <footer>Dados reais extraídos do CSV carregado · 12/01/2026 – 03/07/2026</footer>
+
+
+<script src="nav.js"></script>
+<script>iniciarPagina({ paginaAtiva: 'direcao_instrumento.html', mostrarAbas: true, eyebrow: 'Direção &amp; Instrumento' });</script>
+</body>
+</html>

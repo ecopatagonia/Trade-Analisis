@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Carga de Arquivos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14.5px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:9px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha tr:hover td{ background:rgba(34,40,31,0.03); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+main{ max-width:660px; }
+.caixa-pedagio{ border:2px dashed var(--linha-forte); padding:50px 34px; text-align:center; background:rgba(255,255,255,0.35); }
+.caixa-pedagio h2{ font-family:'Fraunces', serif; font-size:21px; font-weight:600; margin-bottom:9px; }
+.caixa-pedagio p{ font-size:14px; color:var(--tinta-suave); margin-bottom:24px; }
+.botao-escolher{ font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13.5px; letter-spacing:0.04em; text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:14px 28px; cursor:pointer; }
+.botao-escolher:hover{ background:var(--verde-lucro); }
+input[type="file"]{ display:none; }
+.nome-arquivo{ margin-top:15px; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--verde-lucro); min-height:16px; }
+.cartao-registro{ border:1px solid var(--linha-forte); padding:30px; text-align:center; }
+.cartao-registro p.titulo-vazio{ font-family:'Fraunces', serif; font-size:17px; margin-bottom:7px; }
+.cartao-registro p.corpo-vazio{ font-size:14px; color:var(--tinta-suave); }
+.cartao-registro.sucesso{ text-align:left; border-color:var(--verde-lucro); background:var(--verde-lucro-fundo); }
+.cartao-registro.erro{ text-align:left; border-color:var(--vermelho-prejuizo); background:var(--vermelho-prejuizo-fundo); }
+.status-processando{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ambar-alerta); margin-top:15px; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Pedágio de dados</h2></div>
+      <div class="caixa-pedagio" id="dropzone">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6" style="margin-bottom:15px;">
+          <path d="M12 16V4M12 4L7 9M12 4l5 5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2>Solte o relatório aqui</h2>
+        <p>Arquivo .csv exportado do Profit — arraste ou escolha manualmente</p>
+        <label class="botao-escolher" for="arquivo-input">Escolher arquivo</label>
+        <input type="file" id="arquivo-input" accept=".csv">
+        <div class="nome-arquivo" id="nome-arquivo"></div>
+        <div class="status-processando" id="status-processando" style="display:none;">Enviando e processando...</div>
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Registro de cargas</h2></div>
+      <div class="cartao-registro" id="cartao-registro">
+        <p class="titulo-vazio">Nenhuma carga registrada nesta sessão</p>
+        <p class="corpo-vazio">Envie um relatório para atualizar a base de operações.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    Cada operação é conferida pela combinação ativo + horário de abertura + horário de fechamento.
+    Reenviar o mesmo relatório não duplica dados já registrados na base.
+  </footer>
+
+<script src="nav.js"></script>
+<script>
+  const sessao = iniciarPagina({ paginaAtiva: 'upload.html', mostrarAbas: false, eyebrow: 'Carga de Arquivos' });
+  const token = sessao ? sessao.token : null;
+
+  const input = document.getElementById('arquivo-input');
+  const nomeArquivo = document.getElementById('nome-arquivo');
+  const statusProc = document.getElementById('status-processando');
+  const cartaoRegistro = document.getElementById('cartao-registro');
+
+  input.addEventListener('change', () => {
+    if(input.files.length === 0) return;
+    const file = input.files[0];
+    nomeArquivo.textContent = 'Selecionado: ' + file.name;
+
+    const reader = new FileReader();
+    reader.onload = async function(e){
+      const csvTexto = e.target.result;
+      statusProc.style.display = 'block';
+
+      try {
+        const resp = await fetch(APPSCRIPT_URL, {
+          method: 'POST',
+          body: new URLSearchParams({
+            action: 'upload',
+            token: token,
+            csv: csvTexto,
+            nome_arquivo: file.name
+          })
+        });
+        const data = await resp.json();
+        statusProc.style.display = 'none';
+
+        if(data.ok){
+          cartaoRegistro.className = 'cartao-registro sucesso';
+          cartaoRegistro.innerHTML =
+            '<p class="titulo-vazio">Carga concluída: ' + file.name + '</p>' +
+            '<p class="corpo-vazio">' + data.total_linhas_csv + ' operações no arquivo · ' +
+            '<strong>' + data.novas_operacoes + ' novas</strong> · ' +
+            data.duplicadas_ignoradas + ' já existiam (ignoradas)</p>';
+        } else {
+          cartaoRegistro.className = 'cartao-registro erro';
+          cartaoRegistro.innerHTML =
+            '<p class="titulo-vazio">Não foi possível processar o arquivo</p>' +
+            '<p class="corpo-vazio">' + (data.error || 'Erro desconhecido.') + '</p>';
+        }
+      } catch(err){
+        statusProc.style.display = 'none';
+        cartaoRegistro.className = 'cartao-registro erro';
+        cartaoRegistro.innerHTML =
+          '<p class="titulo-vazio">Erro de conexão</p>' +
+          '<p class="corpo-vazio">Verifique sua internet e tente novamente.</p>';
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+</script>
+</body>
+</html>
