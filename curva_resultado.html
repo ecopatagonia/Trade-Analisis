@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Curva de Resultado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:32px 28px 80px; }
+
+.secao{ margin-bottom:40px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:13.5px; color:var(--tinta-suave); margin-top:10px; line-height:1.55; }
+.secao-subtitulo{ font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta); margin:0 0 10px; }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:600; }
+.celula .val.sub{ font-size:13px; font-weight:400; color:var(--tinta-suave); margin-top:3px; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+
+.filtros{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+.filtro-rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-right:4px; }
+.filtro{ font-family:'IBM Plex Mono', monospace; font-size:12px; text-transform:none; letter-spacing:0.02em; padding:7px 14px; border:1px solid var(--linha-forte); background:var(--papel); cursor:pointer; color:var(--tinta-suave); }
+.filtro.ativo{ background:var(--tinta); color:var(--papel); font-weight:600; }
+.linha-filtro-data{ display:none; align-items:center; gap:8px; margin-bottom:22px; }
+.linha-filtro-data.visivel{ display:flex; }
+.linha-filtro-data label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); }
+.linha-filtro-data input[type="date"]{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:6px 10px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+
+.chart-wrap{ border:1px solid var(--linha-forte); background:rgba(255,255,255,0.35); padding:10px 6px 4px; }
+
+.resumo-grade{ grid-template-columns:repeat(4, 1fr); margin-bottom:22px; }
+@media (max-width:640px){ .resumo-grade{ grid-template-columns:repeat(2, 1fr); } }
+
+.dinheiro-formas{ display:flex; gap:18px; flex-wrap:wrap; margin-top:6px; }
+.dinheiro-formas span{ font-family:'IBM Plex Mono', monospace; font-size:13px; }
+
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+.vazio-periodo{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); padding:30px; text-align:center; border:1px dashed var(--linha-forte); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main id="conteudo" style="display:none;">
+
+    <section class="secao">
+      <div class="filtros">
+        <span class="filtro-rot">Período</span>
+        <span class="filtro" data-janela="ultimo_dia">Último dia</span>
+        <span class="filtro" data-janela="semana">Semana</span>
+        <span class="filtro" data-janela="mes">Mês</span>
+        <span class="filtro" data-janela="7_dias">7 dias</span>
+        <span class="filtro ativo" data-janela="30_dias">30 dias</span>
+        <span class="filtro" data-janela="ano">Ano</span>
+        <span class="filtro" data-janela="personalizado">Personalizado</span>
+      </div>
+      <div class="linha-filtro-data" id="linha-data">
+        <label>De</label>
+        <input type="date" id="data-inicio">
+        <label>até</label>
+        <input type="date" id="data-fim">
+      </div>
+
+      <div class="grade resumo-grade" id="resumo-grade"></div>
+    </section>
+
+    <div id="area-com-dados">
+
+      <section class="secao">
+        <div class="secao-header">
+          <h2>Curva de resultado acumulado</h2>
+          <span class="n-amostra" id="n-curva">—</span>
+        </div>
+        <div class="chart-wrap">
+          <svg id="svg-curva" viewBox="0 0 900 340" width="100%"></svg>
+        </div>
+        <div class="chart-wrap" style="margin-top:8px;">
+          <svg id="svg-diario" viewBox="0 0 900 120" width="100%"></svg>
+        </div>
+        <p class="secao-intro">Acima: acumulado com um ponto por dia (verde/vermelho conforme o resultado daquele dia), com o valor destacado no pico, no vale e no ponto final. Abaixo: resultado individual de cada dia operado, sem acumular.</p>
+      </section>
+
+      <section class="secao">
+        <div class="secao-header">
+          <h2>Resultado semanal</h2>
+          <span class="n-amostra" id="n-semanal">—</span>
+        </div>
+        <div class="chart-wrap">
+          <svg id="svg-semanal" viewBox="0 0 900 220" width="100%"></svg>
+        </div>
+        <p class="secao-intro">Cada barra = resultado real daquela semana. A linha pontilhada é a média acumulada corrida (resultado total até ali ÷ número da semana), com o valor atual no final da linha.</p>
+      </section>
+
+      <section class="secao">
+        <div class="secao-header">
+          <h2>Resultado mensal</h2>
+          <span class="n-amostra" id="n-mensal">—</span>
+        </div>
+        <div class="chart-wrap">
+          <svg id="svg-mensal" viewBox="0 0 900 220" width="100%"></svg>
+        </div>
+      </section>
+
+      <section class="secao">
+        <div class="secao-header"><h2>Drawdown e pico histórico</h2></div>
+        <div class="grade" style="grid-template-columns:repeat(2, 1fr);" id="grade-drawdown"></div>
+      </section>
+
+      <section class="secao">
+        <div class="secao-header"><h2>Rachas (sequências)</h2></div>
+        <p class="secao-subtitulo">Por operações (independente do dia)</p>
+        <div class="grade" style="grid-template-columns:repeat(2, 1fr); margin-bottom:20px;" id="grade-racha-operacoes"></div>
+        <p class="secao-subtitulo">Por dias (resultado líquido do dia, mesmo com operações mistas)</p>
+        <div class="grade" style="grid-template-columns:repeat(2, 1fr);" id="grade-racha-dias"></div>
+      </section>
+
+    </div>
+
+    <div class="vazio-periodo" id="vazio-periodo" style="display:none;">Nenhuma operação no período selecionado.</div>
+
+  </main>
+
+  <div class="carregando" id="carregando">Carregando operações...</div>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  let todosOsTrades = [];
+  let janelaAtual = '30_dias';
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function corVar(v) { return v >= 0 ? '#3B6E4F' : '#A13D2E'; }
+  function limparSvg(id) { const svg = document.getElementById(id); while (svg.firstChild) svg.removeChild(svg.firstChild); return svg; }
+  function fmtR(v) { return formatarReais(v); }
+  function fmtPts(v) {
+    const sinal = v < 0 ? '-' : '';
+    return sinal + Math.round(Math.abs(v)).toLocaleString('pt-BR') + ' pts';
+  }
+
+  async function carregar() {
+    const sessao = iniciarPagina({ paginaAtiva: 'curva_resultado.html', mostrarAbas: true });
+    if (!sessao) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessao.token));
+      const data = await resp.json();
+      if (!data.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + data.error;
+        return;
+      }
+      todosOsTrades = ordenarPorFecha(data.trades);
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+      aplicarJanela();
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao buscar dados.';
+    }
+  }
+
+  function selecionarJanela(janela, el) {
+    janelaAtual = janela;
+    document.querySelectorAll('.filtro').forEach(f => f.classList.remove('ativo'));
+    el.classList.add('ativo');
+    document.getElementById('linha-data').classList.toggle('visivel', janela === 'personalizado');
+    aplicarJanela();
+  }
+  document.querySelectorAll('.filtro').forEach(el => {
+    el.addEventListener('click', () => selecionarJanela(el.dataset.janela, el));
+  });
+  document.getElementById('data-inicio').addEventListener('change', aplicarJanela);
+  document.getElementById('data-fim').addEventListener('change', aplicarJanela);
+
+  function filtrarPersonalizado(trades) {
+    const dataInicio = document.getElementById('data-inicio').value;
+    const dataFim = document.getElementById('data-fim').value;
+    let base = trades;
+    if (dataInicio) { const ini = new Date(dataInicio + 'T00:00:00'); base = base.filter(t => dataDoTrade(t) >= ini); }
+    if (dataFim) { const fim = new Date(dataFim + 'T23:59:59'); base = base.filter(t => dataDoTrade(t) <= fim); }
+    return base;
+  }
+
+  function aplicarJanela() {
+    const filtrados = janelaAtual === 'personalizado'
+      ? filtrarPersonalizado(todosOsTrades)
+      : filtrarPorJanela(todosOsTrades, janelaAtual);
+
+    renderizarResumo(filtrados);
+
+    const areaComDados = document.getElementById('area-com-dados');
+    const vazio = document.getElementById('vazio-periodo');
+    if (filtrados.length === 0) {
+      areaComDados.style.display = 'none';
+      vazio.style.display = 'block';
+      return;
+    }
+    areaComDados.style.display = 'block';
+    vazio.style.display = 'none';
+
+    renderizarCurva(filtrados);
+    renderizarDiario(filtrados);
+    renderizarBarrasPeriodo('svg-semanal', 'n-semanal', filtrados, chaveSemana, 'semanas');
+    renderizarBarrasPeriodo('svg-mensal', 'n-mensal', filtrados, chaveMes, 'meses');
+    renderizarDrawdown(filtrados);
+    renderizarRachas(filtrados);
+  }
+
+  function renderizarResumo(filtrados) {
+    const resumo = calcularBasico(filtrados);
+    const grade = document.getElementById('resumo-grade');
+    if (resumo.n === 0) {
+      grade.innerHTML = '<div class="celula" style="border-right:none;"><div class="rot">Operações</div><div class="val">0</div></div>';
+      return;
+    }
+    const corResultado = resumo.resultado >= 0 ? 'pos' : 'neg';
+    const corExp = resumo.expectancy >= 0 ? 'pos' : 'neg';
+    grade.innerHTML = `
+      <div class="celula"><div class="rot">Operações</div><div class="val">${resumo.n}</div></div>
+      <div class="celula"><div class="rot">Resultado acumulado</div><div class="val ${corResultado}">${fmtR(resumo.resultado)}</div></div>
+      <div class="celula"><div class="rot">Expectancy</div><div class="val ${corExp}">${fmtR(resumo.expectancy)}</div></div>
+      <div class="celula" style="border-right:none;"><div class="rot">Win rate</div><div class="val">${resumo.winRate.toFixed(1)}%</div></div>
+    `;
+  }
+
+  function renderizarCurva(filtrados) {
+    const svg = limparSvg('svg-curva');
+    const W = 900, H = 340, padL = 60, padR = 60, padT = 20, padB = 30;
+    let acumulado = 0;
+    const pontos = filtrados.map(t => {
+      acumulado += Number(t['Resultado_R$']) || 0;
+      return { valor: Number(t['Resultado_R$']) || 0, acumulado };
+    });
+
+    let maxAc = Math.max(...pontos.map(p => p.acumulado), 0);
+    let minAc = Math.min(...pontos.map(p => p.acumulado), 0);
+    const span = Math.max(maxAc - minAc, 100);
+    maxAc += span * 0.12; minAc -= span * 0.12;
+    if (maxAc === minAc) maxAc += 100;
+
+    function x(i) { return pontos.length > 1 ? padL + (i / (pontos.length - 1)) * (W - padL - padR) : (padL + W - padR) / 2; }
+    function y(v) { return H - padB - ((v - minAc) / (maxAc - minAc)) * (H - padT - padB); }
+
+    const passo = passoLimpo(maxAc - minAc, 4);
+    for (let v = Math.ceil(minAc / passo) * passo; v <= maxAc; v += passo) {
+      svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: '#C9C1A9', 'stroke-width': 0.5 }));
+      const t = svgEl('text', { x: padL - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-family': 'IBM Plex Mono', 'font-size': 11, fill: '#5B5A47' });
+      t.textContent = (v < 0 ? '-' : '') + 'R$' + Math.round(Math.abs(v)).toLocaleString('pt-BR');
+      svg.appendChild(t);
+    }
+    svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: y(0), y2: y(0), stroke: '#5B5A47', 'stroke-width': 1, 'stroke-dasharray': '4,3' }));
+
+    let maxIdx = 0, minIdx = 0;
+    pontos.forEach((p, i) => { if (p.acumulado > pontos[maxIdx].acumulado) maxIdx = i; if (p.acumulado < pontos[minIdx].acumulado) minIdx = i; });
+    const finalIdx = pontos.length - 1;
+
+    let d = 'M ' + x(0) + ' ' + y(pontos[0].acumulado);
+    for (let i = 1; i < pontos.length; i++) d += ' L ' + x(i) + ' ' + y(pontos[i].acumulado);
+    svg.appendChild(svgEl('path', { d, fill: 'none', stroke: '#3B6E4F', 'stroke-width': 2 }));
+
+    pontos.forEach((p, i) => {
+      const destaque = (i === maxIdx || i === minIdx || i === finalIdx);
+      svg.appendChild(svgEl('circle', { cx: x(i), cy: y(p.acumulado), r: destaque ? 5 : 3, fill: corVar(p.valor), stroke: '#EDE7D8', 'stroke-width': 1 }));
+    });
+
+    function rotulo(idx, texto, cor, acimaAbaixo) {
+      const lbl = svgEl('text', { x: Math.min(Math.max(x(idx), padL + 40), W - padR - 40), y: y(pontos[idx].acumulado) + acimaAbaixo, 'text-anchor': 'middle', 'font-family': 'IBM Plex Mono', 'font-size': 12, 'font-weight': 600, fill: cor });
+      lbl.textContent = texto;
+      svg.appendChild(lbl);
+    }
+    rotulo(maxIdx, 'máx: ' + fmtR(pontos[maxIdx].acumulado), '#3B6E4F', -12);
+    rotulo(minIdx, 'mín: ' + fmtR(pontos[minIdx].acumulado), '#A13D2E', 20);
+    if (finalIdx !== maxIdx && finalIdx !== minIdx) {
+      rotulo(finalIdx, 'atual: ' + fmtR(pontos[finalIdx].acumulado), corVar(pontos[finalIdx].acumulado) === '#3B6E4F' ? '#3B6E4F' : '#A13D2E', pontos[finalIdx].acumulado >= (maxAc + minAc) / 2 ? 20 : -12);
+    }
+
+    const legenda = svgEl('text', { x: padL + 6, y: padT + 6, 'font-family': 'IBM Plex Mono', 'font-size': 12, 'font-weight': 600, fill: '#22281F' });
+    legenda.textContent = pontos.length + ' operações no período';
+    svg.appendChild(legenda);
+
+    document.getElementById('n-curva').textContent = 'n = ' + pontos.length + ' operações';
+  }
+
+  function renderizarDiario(filtrados) {
+    const svg = limparSvg('svg-diario');
+    const W = 900, H = 120, padL = 60, padR = 60, padT = 10, padB = 16;
+    const dias = resumoPorPeriodo(filtrados, chaveDia);
+    if (dias.length === 0) return;
+    const maxAbs = Math.max(...dias.map(d => Math.abs(d.resultado)), 1);
+    const largura = (W - padL - padR) / dias.length;
+    const zero = H - padB - (H - padT - padB) / 2;
+
+    svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: zero, y2: zero, stroke: '#5B5A47', 'stroke-width': 1 }));
+    dias.forEach((d, i) => {
+      const alt = (Math.abs(d.resultado) / maxAbs) * (H - padT - padB) / 2;
+      const xPos = padL + i * largura;
+      const yPos = d.resultado >= 0 ? zero - alt : zero;
+      svg.appendChild(svgEl('rect', { x: xPos + 1, y: yPos, width: Math.max(largura - 2, 1), height: Math.max(alt, 1), fill: corVar(d.resultado), stroke: '#EDE7D8', 'stroke-width': 1 }));
+    });
+  }
+
+  function renderizarBarrasPeriodo(svgId, nAmostraId, filtrados, chaveFn, nomeUnidade) {
+    const svg = limparSvg(svgId);
+    const W = 900, H = 220, padL = 65, padR = 90, padT = 30, padB = 30;
+
+    const periodos = resumoPorPeriodo(filtrados, chaveFn);
+    const comMedia = calcularMediaAcumulada(periodos);
+    document.getElementById(nAmostraId).textContent = 'n = ' + periodos.length + ' ' + nomeUnidade;
+    if (periodos.length === 0) return;
+
+    const valores = comMedia.map(p => p.resultado);
+    const medias = comMedia.map(p => p.mediaAcumuladaR);
+    const todosValores = valores.concat(medias, [0]);
+    const maxVal = Math.max(...todosValores);
+    const minVal = Math.min(...todosValores);
+
+    const passo = passoLimpo(Math.max(maxVal - minVal, 1), 4);
+    let topo = Math.ceil(maxVal / passo) * passo;
+    let base = minVal < 0 ? Math.floor(minVal / passo) * passo : 0;
+    if (topo === base) topo = passo;
+
+    const largura = (W - padL - padR) / periodos.length;
+    function yEsc(v) { return H - padB - ((v - base) / (topo - base)) * (H - padT - padB); }
+    const zero = yEsc(0);
+
+    for (let v = (base === 0 ? passo : Math.ceil(base / passo) * passo); v <= topo; v += passo) {
+      if (v === 0) continue;
+      const yPos = yEsc(v);
+      svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: yPos, y2: yPos, stroke: '#C9C1A9', 'stroke-width': 0.5 }));
+      const lbl = svgEl('text', { x: padL - 8, y: yPos + 4, 'text-anchor': 'end', 'font-family': 'IBM Plex Mono', 'font-size': 11, fill: '#5B5A47' });
+      lbl.textContent = (v < 0 ? '-' : '') + 'R$' + Math.round(Math.abs(v)).toLocaleString('pt-BR');
+      svg.appendChild(lbl);
+    }
+    svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: zero, y2: zero, stroke: '#5B5A47', 'stroke-width': 1 }));
+    const lblZero = svgEl('text', { x: padL - 8, y: zero + 4, 'text-anchor': 'end', 'font-family': 'IBM Plex Mono', 'font-size': 11, fill: '#5B5A47' });
+    lblZero.textContent = 'R$0';
+    svg.appendChild(lblZero);
+
+    comMedia.forEach((p, i) => {
+      const xPos = padL + i * largura;
+      const y0 = yEsc(0), y1 = yEsc(p.resultado);
+      const yTopo = Math.min(y0, y1), altura = Math.abs(y1 - y0);
+      svg.appendChild(svgEl('rect', { x: xPos + 2, y: yTopo, width: Math.max(largura - 4, 2), height: Math.max(altura, 1), fill: corVar(p.resultado), stroke: '#EDE7D8', 'stroke-width': 1 }));
+    });
+
+    let dLinha = '';
+    comMedia.forEach((p, i) => {
+      const cx = padL + i * largura + largura / 2;
+      dLinha += (i === 0 ? 'M ' : ' L ') + cx + ' ' + yEsc(p.mediaAcumuladaR);
+    });
+    svg.appendChild(svgEl('path', { d: dLinha, fill: 'none', stroke: '#B8862E', 'stroke-width': 2.5, 'stroke-dasharray': '6,5' }));
+
+    const ultimaMedia = comMedia[comMedia.length - 1].mediaAcumuladaR;
+    const ultimoX = padL + (comMedia.length - 1) * largura + largura / 2;
+    const lblMedia = svgEl('text', { x: Math.min(ultimoX + 8, W - padR + 4), y: yEsc(ultimaMedia) + 4, 'font-family': 'IBM Plex Mono', 'font-size': 12, 'font-weight': 600, fill: '#B8862E' });
+    lblMedia.textContent = fmtR(ultimaMedia);
+    svg.appendChild(lblMedia);
+
+    const legenda = svgEl('text', { x: padL + 6, y: padT - 10, 'font-family': 'IBM Plex Mono', 'font-size': 12, 'font-weight': 600, fill: '#22281F' });
+    legenda.textContent = periodos.length + ' ' + nomeUnidade + ' representad' + (nomeUnidade === 'semanas' ? 'a' : 'o') + 's';
+    svg.appendChild(legenda);
+    const legendaMedia = svgEl('text', { x: W - padR, y: padT - 10, 'text-anchor': 'end', 'font-family': 'IBM Plex Mono', 'font-size': 11, fill: '#B8862E' });
+    legendaMedia.textContent = '- - - média acumulada';
+    svg.appendChild(legendaMedia);
+  }
+
+  function renderizarDrawdown(filtrados) {
+    const dd = calcularDrawdown(filtrados);
+    const grade = document.getElementById('grade-drawdown');
+    const picoData = dd.curva.reduce((max, c) => c.acumulado > max.acumulado ? c : max, dd.curva[0]);
+    grade.innerHTML = `
+      <div class="celula">
+        <div class="rot">Drawdown máximo</div>
+        <div class="val neg">${fmtR(-dd.maxDrawdown)}</div>
+        <div class="val sub">${dd.maxDrawdownData ? 'em ' + dd.maxDrawdownData.toLocaleDateString('pt-BR') : 'sem drawdown no período'}</div>
+      </div>
+      <div class="celula" style="border-right:none;">
+        <div class="rot">Pico histórico</div>
+        <div class="val pos">${fmtR(dd.peak)}</div>
+        <div class="val sub">${picoData ? 'em ' + picoData.data.toLocaleDateString('pt-BR') : '—'}</div>
+      </div>
+    `;
+  }
+
+  function renderizarRachas(filtrados) {
+    const rOps = calcularRachasOperacoes(filtrados);
+    const gridOps = document.getElementById('grade-racha-operacoes');
+    gridOps.innerHTML = `
+      <div class="celula">
+        <div class="rot">Maior sequência de ganhos</div>
+        <div class="val pos">${rOps.ganhos.tamanho} operações</div>
+        <div class="dinheiro-formas"><span class="pos">${fmtR(rOps.ganhos.resultado)}</span><span class="pos">${fmtPts(rOps.ganhos.pontos)}</span></div>
+        <div class="val sub">média por operação: ${fmtR(rOps.ganhos.mediaResultado)} · ${fmtPts(rOps.ganhos.mediaPontos)}</div>
+      </div>
+      <div class="celula" style="border-right:none;">
+        <div class="rot">Maior sequência de perdas</div>
+        <div class="val neg">${rOps.perdas.tamanho} operações</div>
+        <div class="dinheiro-formas"><span class="neg">${fmtR(rOps.perdas.resultado)}</span><span class="neg">${fmtPts(rOps.perdas.pontos)}</span></div>
+        <div class="val sub">média por operação: ${fmtR(rOps.perdas.mediaResultado)} · ${fmtPts(rOps.perdas.mediaPontos)}</div>
+      </div>
+    `;
+
+    const dias = resumoPorPeriodo(filtrados, chaveDia);
+    const rDias = calcularRachasDias(dias);
+    const gridDias = document.getElementById('grade-racha-dias');
+    gridDias.innerHTML = `
+      <div class="celula">
+        <div class="rot">Maior sequência de dias de ganho</div>
+        <div class="val pos">${rDias.ganhos.dias} dias</div>
+        <div class="dinheiro-formas"><span class="pos">${fmtR(rDias.ganhos.resultado)}</span><span class="pos">${fmtPts(rDias.ganhos.pontos)}</span></div>
+        <div class="val sub">média por dia: ${fmtR(rDias.ganhos.mediaResultado)} · ${fmtPts(rDias.ganhos.mediaPontos)}</div>
+      </div>
+      <div class="celula" style="border-right:none;">
+        <div class="rot">Maior sequência de dias de perda</div>
+        <div class="val neg">${rDias.perdas.dias} dias</div>
+        <div class="dinheiro-formas"><span class="neg">${fmtR(rDias.perdas.resultado)}</span><span class="neg">${fmtPts(rDias.perdas.pontos)}</span></div>
+        <div class="val sub">média por dia: ${fmtR(rDias.perdas.mediaResultado)} · ${fmtPts(rDias.perdas.mediaPontos)}</div>
+      </div>
+    `;
+  }
+
+  // ---- helper de escala de eixo compartilhado por todos os gráficos desta página ----
+  function passoLimpo(intervalo, tiquesAlvo) {
+    const bruto = intervalo / tiquesAlvo;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(bruto)));
+    const residual = bruto / magnitude;
+    const residualLimpo = residual > 5 ? 10 : residual > 2 ? 5 : residual > 1 ? 2 : 1;
+    return residualLimpo * magnitude;
+  }
+
+  carregar();
+</script>
+</body>
+</html>
