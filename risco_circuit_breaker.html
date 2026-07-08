@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Circuit Breaker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+.badge-alerta-n{ display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:3px 9px; border-radius:2px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+/* ===== específico desta página ===== */
+.grade-4{ grid-template-columns:repeat(4, 1fr); }
+@media (max-width:720px){ .grade-4{ grid-template-columns:repeat(2, 1fr); } }
+
+.escala-percentil{ position:relative; height:64px; margin:26px 0 14px; }
+.escala-percentil .trilho{ position:absolute; top:26px; left:0; right:0; height:3px; background:var(--linha-forte); }
+.escala-percentil .marca{ position:absolute; top:0; transform:translateX(-50%); text-align:center; }
+.escala-percentil .marca .ponto{ width:11px; height:11px; border-radius:50%; margin:0 auto 6px; border:2px solid var(--papel); }
+.escala-percentil .marca .etq{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); white-space:nowrap; }
+.escala-percentil .marca .etq strong{ display:block; color:var(--tinta); font-size:14px; }
+
+.teaser-simulacao{
+  border:1px solid var(--verde-lucro); background:var(--verde-lucro-fundo);
+  padding:22px 24px; margin-top:8px;
+}
+.teaser-simulacao .rotulo{
+  font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--verde-lucro); margin-bottom:10px;
+}
+.teaser-simulacao p{ font-size:15px; line-height:1.6; margin-bottom:14px; }
+.teaser-simulacao .comparativo{ display:flex; gap:30px; flex-wrap:wrap; margin-bottom:16px; }
+.teaser-simulacao .comparativo .item{ font-family:'IBM Plex Mono', monospace; }
+.teaser-simulacao .comparativo .item .rot{ font-size:11px; color:var(--tinta-suave); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+.teaser-simulacao .comparativo .item .val{ font-size:19px; font-weight:600; }
+.link-simular{
+  display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:12.5px;
+  text-transform:uppercase; letter-spacing:0.05em; color:var(--verde-lucro); font-weight:600;
+  border-bottom:1px solid var(--verde-lucro); padding-bottom:2px;
+}
+.badge-em-construcao{
+  display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10px;
+  text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave);
+  border:1px solid var(--linha-forte); padding:2px 7px; margin-left:8px; border-radius:2px;
+}
+
+.filtros{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; align-items:center; }
+.linha-filtro-data{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.linha-filtro-data label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); }
+.linha-filtro-data input[type="date"]{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:6px 10px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+.btn-limpar-data{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; background:none; border:1px solid var(--linha-forte); padding:6px 10px; cursor:pointer; color:var(--tinta-suave); }
+.btn-limpar-data:hover{ color:var(--vermelho-prejuizo); border-color:var(--vermelho-prejuizo); }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+
+.badge-alerta-n.nivel-insuficiente{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.badge-alerta-n.nivel-bom{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+
+.campo-limite{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.campo-limite label{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--tinta-suave); }
+.campo-limite input[type="number"]{
+  font-family:'IBM Plex Mono', monospace; font-size:14px; padding:8px 11px; width:140px;
+  border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta);
+}
+.campo-limite .fonte{ font-size:11.5px; color:var(--tinta-suave); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main id="conteudo" style="display:none;">
+
+    <div class="secao-header" style="border-bottom:2px solid var(--tinta); margin-bottom:6px;">
+      <h2><span data-termo="circuit_breaker">Circuit Breaker</span></h2>
+    </div>
+    <p class="secao-intro" style="margin-bottom:20px;">
+      Limite diário de perda baseado nos <span data-termo="percentil">percentis</span> reais do seu
+      resultado por dia — não em <span data-termo="desvio_padrao">desvio padrão</span>, que distorce
+      quando a distribuição não é simétrica, como é o seu caso.
+    </p>
+
+    <div class="filtros">
+      <div class="linha-filtro-data">
+        <label>Calcular com dados de</label>
+        <input type="date" id="data-inicio" onchange="recalcular()">
+        <label>até</label>
+        <input type="date" id="data-fim" onchange="recalcular()">
+        <button class="btn-limpar-data" onclick="limparFiltroData()">Usar todo o histórico</button>
+      </div>
+    </div>
+
+    <!-- ===== LIMITE DIÁRIO SUGERIDO ===== -->
+    <section class="secao">
+      <div class="secao-header">
+        <h2>Limite diário sugerido</h2>
+        <span class="n-amostra" id="n-amostra">—</span>
+      </div>
+
+      <div class="escala-percentil">
+        <div class="trilho"></div>
+        <div class="marca" style="left:4%;">
+          <div class="ponto" style="background:var(--vermelho-prejuizo);"></div>
+          <div class="etq"><strong id="valor-p5">—</strong>P5 (pior 5% dos dias)</div>
+        </div>
+        <div class="marca" style="left:50%;">
+          <div class="ponto" style="background:var(--ambar-alerta);"></div>
+          <div class="etq"><strong id="valor-mediana">—</strong>Mediana</div>
+        </div>
+        <div class="marca" style="left:96%;">
+          <div class="ponto" style="background:var(--verde-lucro);"></div>
+          <div class="etq"><strong id="valor-p95">—</strong>P95 (melhor 5% dos dias)</div>
+        </div>
+      </div>
+
+      <div class="grade grade-4" style="margin-top:30px;">
+        <div class="celula"><div class="rot">Pior dia da amostra</div><div class="val neg" id="valor-pior-dia">—</div></div>
+        <div class="celula"><div class="rot">Melhor dia da amostra</div><div class="val pos" id="valor-melhor-dia">—</div></div>
+        <div class="celula"><div class="rot">Média diária</div><div class="val" id="valor-media-dia">—</div></div>
+        <div class="celula" style="border-right:none;"><div class="rot">Freno de mão sugerido (P5)</div><div class="val neutro" id="valor-freno-sugerido">—</div></div>
+      </div>
+
+      <div class="badge-alerta-n" id="aviso-amostra" style="margin-top:18px;">—</div>
+
+      <div class="nota-analista" id="nota-outlier" style="display:none;">
+        <strong>Nota do analista</strong>
+        <span id="nota-outlier-texto"></span>
+      </div>
+    </section>
+
+    <!-- ===== TEASER: SIMULAÇÃO RETROATIVA ===== -->
+    <section class="secao">
+      <div class="secao-header">
+        <h2>O que este limite teria mudado</h2>
+      </div>
+
+      <div class="campo-limite">
+        <label for="input-limite">Limite diário a simular (R$, negativo)</label>
+        <input type="number" id="input-limite" step="100" oninput="limiteEditadoManualmente = true; recalcularSimulacao();">
+        <span class="fonte" id="fonte-limite">sugerido automaticamente a partir do P5</span>
+      </div>
+
+      <div class="teaser-simulacao">
+        <div class="rotulo" id="rotulo-simulacao">Simulação retroativa</div>
+        <p id="texto-simulacao-intro">
+          Se você tivesse parado de operar assim que cada dia atingisse este limite, o resultado do
+          período escolhido teria sido diferente:
+        </p>
+        <div class="comparativo">
+          <div class="item"><div class="rot">Resultado real do período</div><div class="val neg" id="sim-resultado-real">—</div></div>
+          <div class="item"><div class="rot">Resultado com o freno aplicado</div><div class="val pos" id="sim-resultado-freio">—</div></div>
+          <div class="item"><div class="rot">Drawdown real (por dia)</div><div class="val neg" id="sim-dd-real">—</div></div>
+          <div class="item"><div class="rot">Drawdown com o freno aplicado</div><div class="val pos" id="sim-dd-freio">—</div></div>
+        </div>
+        <p style="font-size:13px; color:var(--tinta-suave); margin-bottom:16px;">
+          Esta simulação assume que parar no limite não altera o resto do seu comportamento naquele dia
+          — uma simplificação razoável para ilustrar o efeito, mas não uma previsão exata.
+        </p>
+        <span class="link-simular">Simular outros cenários e valores de limite →</span><span class="badge-em-construcao">Em construção — Estratégia Financeira</span>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="carregando" id="carregando">Carregando dados...</div>
+
+  <footer>Circuit Breaker · Controle de Risco — dados ao vivo, recalculados no navegador</footer>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script src="glossario.js"></script>
+<script>
+  let todosOsTrades = [];
+  let limiteEditadoManualmente = false;
+
+  function formatarReaisSinal(v) {
+    const sinal = v > 0 ? '+' : '';
+    return sinal + formatarReais(v);
+  }
+
+  async function carregar() {
+    const sessao = iniciarPagina({ paginaAtiva: 'risco_circuit_breaker.html', mostrarAbas: true, grupoAbas: 'risco', eyebrow: 'Controle de Risco' });
+    if (!sessao) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessao.token));
+      const data = await resp.json();
+      if (!data.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + data.error;
+        return;
+      }
+      todosOsTrades = data.trades;
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+      recalcular();
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao buscar dados.';
+    }
+  }
+
+  function obterTradesFiltrados() {
+    const dataInicioStr = document.getElementById('data-inicio').value;
+    const dataFimStr = document.getElementById('data-fim').value;
+    const dataInicio = dataInicioStr ? new Date(dataInicioStr + 'T00:00:00') : null;
+    const dataFim = dataFimStr ? new Date(dataFimStr + 'T23:59:59') : null;
+    return filtrarPorRangoFechas(todosOsTrades, dataInicio, dataFim);
+  }
+
+  function limparFiltroData() {
+    document.getElementById('data-inicio').value = '';
+    document.getElementById('data-fim').value = '';
+    recalcular();
+  }
+
+  function recalcular() {
+    const filtrados = obterTradesFiltrados();
+    const perc = calcularPercentisDiarios(filtrados);
+    const confiab = avaliarConfiabilidadeAmostraDias(perc.n);
+
+    document.getElementById('n-amostra').textContent = 'n = ' + perc.n + ' dias operados';
+
+    if (perc.n === 0) {
+      document.getElementById('aviso-amostra').textContent = 'Nenhum dia no período selecionado.';
+      document.getElementById('nota-outlier').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('valor-p5').textContent = formatarReais(perc.p5);
+    document.getElementById('valor-mediana').textContent = formatarReais(perc.mediana);
+    document.getElementById('valor-p95').textContent = formatarReais(perc.p95);
+    document.getElementById('valor-pior-dia').textContent = formatarReais(perc.piorDia);
+    document.getElementById('valor-melhor-dia').textContent = formatarReais(perc.melhorDia);
+    document.getElementById('valor-media-dia').textContent = formatarReais(perc.media);
+    document.getElementById('valor-media-dia').className = 'val ' + (perc.media >= 0 ? 'pos' : 'neg');
+    document.getElementById('valor-freno-sugerido').textContent = formatarReais(perc.p5) + ' / dia';
+
+    const avisoEl = document.getElementById('aviso-amostra');
+    avisoEl.textContent = 'n = ' + perc.n + ' dias — ' + confiab.mensagem;
+    avisoEl.className = 'badge-alerta-n nivel-' + confiab.nivel;
+
+    // nota de outlier: só aparece se o pior dia estiver muito além do P5 (mais de 3x a distância
+    // do P5 até a mediana), sinal de que é um evento isolado e não o padrão típico.
+    const distanciaTipica = Math.abs(perc.mediana - perc.p5) || 1;
+    const distanciaPior = Math.abs(perc.piorDia - perc.p5);
+    const notaEl = document.getElementById('nota-outlier');
+    if (distanciaPior > distanciaTipica * 2 && perc.n >= 20) {
+      notaEl.style.display = 'block';
+      document.getElementById('nota-outlier-texto').textContent =
+        'O pior dia do período (' + formatarReais(perc.piorDia) + ') fica bem além do P5 (' + formatarReais(perc.p5) + ') — ' +
+        'provavelmente um evento isolado, não o padrão típico de um dia ruim. Por isso o freno de mão sugerido usa o P5 ' +
+        'e não o pior caso: um dia normal que ultrapasse esse valor já é sinal de parar.';
+    } else {
+      notaEl.style.display = 'none';
+    }
+
+    if (!limiteEditadoManualmente) {
+      const sugerido = Math.round(perc.p5 / 100) * 100;
+      document.getElementById('input-limite').value = sugerido;
+    }
+
+    recalcularSimulacao();
+  }
+
+  function recalcularSimulacao() {
+    const filtrados = obterTradesFiltrados();
+    const limite = Number(document.getElementById('input-limite').value);
+    if (!limite || isNaN(limite) || filtrados.length === 0) return;
+
+    const sim = simularCircuitBreakerDiario(filtrados, limite);
+    const ddReal = calcularDrawdownDiario(filtrados);
+
+    document.getElementById('rotulo-simulacao').textContent =
+      'Simulação retroativa · aplicando ' + formatarReais(limite) + '/dia aos ' + sim.n + ' dias do período';
+
+    document.getElementById('sim-resultado-real').textContent = formatarReaisSinal(sim.resultadoTotalOriginal);
+    document.getElementById('sim-resultado-real').className = 'val ' + (sim.resultadoTotalOriginal >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('sim-resultado-freio').textContent = formatarReaisSinal(sim.resultadoTotalComFreio);
+    document.getElementById('sim-resultado-freio').className = 'val ' + (sim.resultadoTotalComFreio >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('sim-dd-real').textContent = formatarReais(ddReal.maxDrawdown);
+    document.getElementById('sim-dd-freio').textContent = formatarReais(sim.maxDrawdownComFreio);
+
+    document.getElementById('fonte-limite').textContent = limiteEditadoManualmente
+      ? 'valor definido manualmente'
+      : 'sugerido automaticamente a partir do P5 do período selecionado';
+  }
+
+  carregar();
+</script>
+</body>
+</html>
