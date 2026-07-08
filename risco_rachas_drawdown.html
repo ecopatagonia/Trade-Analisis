@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Rachas &amp; Drawdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; border:1px solid transparent; border-bottom:none; white-space:nowrap; }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border-color:var(--linha-forte); border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+.aba:not(.ativa):hover{ color:var(--tinta); }
+
+main{ max-width:1000px; margin:0 auto; padding:42px 28px 80px; }
+
+.secao{ margin-bottom:38px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.secao-intro{ font-size:14.5px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:15.5px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-weight:600; }
+.val.pos{ color:var(--verde-lucro); }
+.val.neg{ color:var(--vermelho-prejuizo); }
+.val.neutro{ color:var(--ambar-alerta); }
+
+.grade{ display:grid; border:1px solid var(--linha-forte); }
+.celula{ padding:17px 19px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.celula:last-child{ border-right:none; }
+.celula .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:7px; }
+.celula .val{ font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600; }
+
+.badge-mock{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ambar-alerta); border:1px solid var(--ambar-alerta); padding:3px 8px; margin-left:10px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:16px 20px; font-size:14.5px; line-height:1.65; margin:20px 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; color:var(--tinta); }
+
+footer{ max-width:1000px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+/* ===== específico desta página ===== */
+.grade-4{ grid-template-columns:repeat(4, 1fr); }
+@media (max-width:720px){ .grade-4{ grid-template-columns:repeat(2, 1fr); } }
+
+.secao-secundaria{ margin-top:6px; padding-top:26px; border-top:1px dashed var(--linha-forte); }
+.secao-secundaria .secao-header h2{ font-size:16px; }
+.secao-secundaria .secao-header{ border-bottom:1px solid var(--linha-forte); }
+.rotulo-contexto{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--tinta-suave); background:var(--papel-escuro); padding:3px 9px; margin-left:8px; border-radius:2px; }
+
+.comparativo-rachas{ display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-bottom:8px; }
+@media (max-width:720px){ .comparativo-rachas{ grid-template-columns:1fr; } }
+.coluna-racha h3{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); margin-bottom:12px; }
+.barra-racha{ display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+.barra-racha .rot-n{ width:26px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--tinta-suave); text-align:right; flex-shrink:0; }
+.barra-racha .trilho{ flex:1; height:16px; background:var(--papel-escuro); position:relative; border:1px solid var(--linha); }
+.barra-racha .preenchido{ height:100%; background:var(--vermelho-prejuizo); }
+.barra-racha .preenchido.esperado{ background:var(--linha-forte); }
+.barra-racha .valor-n{ width:78px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); flex-shrink:0; }
+.legenda-racha{ display:flex; gap:18px; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); margin-top:10px; }
+.legenda-racha span{ display:inline-flex; align-items:center; gap:6px; }
+.legenda-racha .quad{ width:10px; height:10px; display:inline-block; }
+.quad.observado{ background:var(--vermelho-prejuizo); }
+.quad.esperado{ background:var(--linha-forte); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <main>
+
+    <div class="secao-header" style="border-bottom:2px solid var(--tinta); margin-bottom:6px;">
+      <h2>Rachas &amp; Drawdown<span class="badge-mock">Dados reais · ainda não conectado ao backend</span></h2>
+    </div>
+    <p class="secao-intro" style="margin-bottom:30px;">
+      Baseado no seu histórico real (817 operações em 100 dias operados). Os valores abaixo já refletem
+      a forma verdadeira dos seus dados — só ainda não são recalculados ao vivo a cada novo upload.
+    </p>
+
+    <!-- ===== RACHAS POR DIA — VISTA PRINCIPAL ===== -->
+    <section class="secao">
+      <div class="secao-header">
+        <h2><span data-termo="racha">Rachas</span> por dia</h2>
+        <span class="n-amostra">n = 100 dias · usado no cálculo de capital</span>
+      </div>
+      <p class="secao-intro">
+        Cada dia conta como uma unidade, independente de quantas operações teve dentro dele. É esta a
+        visão que importa para dimensionar capital — o dinheiro se expõe e se repõe por dia, não por
+        operação isolada.
+      </p>
+
+      <div class="grade grade-4">
+        <div class="celula"><div class="rot">Racha máxima de dias perdedores</div><div class="val neg">3</div></div>
+        <div class="celula"><div class="rot">Racha máxima de dias ganhadores</div><div class="val pos">12</div></div>
+        <div class="celula"><div class="rot" data-termo="win_rate">Win rate por dia</div><div class="val">77,0%</div></div>
+        <div class="celula" style="border-right:none;"><div class="rot">Eventos de racha perdedora</div><div class="val">16</div></div>
+      </div>
+
+      <div class="comparativo-rachas" style="margin-top:22px;">
+        <div class="coluna-racha">
+          <h3>Observado no seu histórico</h3>
+          <div class="barra-racha"><div class="rot-n">1</div><div class="trilho"><div class="preenchido" style="width:100%"></div></div><div class="valor-n">10 de 16</div></div>
+          <div class="barra-racha"><div class="rot-n">2</div><div class="trilho"><div class="preenchido" style="width:50%"></div></div><div class="valor-n">5 de 16</div></div>
+          <div class="barra-racha"><div class="rot-n">3</div><div class="trilho"><div class="preenchido" style="width:10%"></div></div><div class="valor-n">1 de 16</div></div>
+        </div>
+        <div class="coluna-racha">
+          <h3 data-termo="racha_teorica">Esperado se fosse acaso puro</h3>
+          <div class="barra-racha"><div class="rot-n">1</div><div class="trilho"><div class="preenchido esperado" style="width:100%"></div></div><div class="valor-n">≈ 12,3 de 16</div></div>
+          <div class="barra-racha"><div class="rot-n">2</div><div class="trilho"><div class="preenchido esperado" style="width:23%"></div></div><div class="valor-n">≈ 2,8 de 16</div></div>
+          <div class="barra-racha"><div class="rot-n">3</div><div class="trilho"><div class="preenchido esperado" style="width:5.3%"></div></div><div class="valor-n">≈ 0,6 de 16</div></div>
+        </div>
+      </div>
+      <div class="legenda-racha">
+        <span><span class="quad observado"></span>Observado</span>
+        <span><span class="quad esperado"></span>Esperado (independência estatística)</span>
+      </div>
+
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        A nível de dia, o desvio do acaso é moderado: rachas de 2 dias perdedores seguidos aconteceram
+        quase o dobro do esperado (5 vs. ≈2,8), mas nada dramático. Isso é uma notícia relativamente boa —
+        significa que, historicamente, um dia ruim raramente contamina o dia seguinte. O padrão mais forte
+        de agrupamento está dentro do próprio dia, na sequência de operações (veja a seção abaixo).
+      </div>
+    </section>
+
+    <!-- ===== DRAWDOWN & CAPITAL MÍNIMO ===== -->
+    <section class="secao">
+      <div class="secao-header">
+        <h2><span data-termo="drawdown">Drawdown</span> &amp; Capital Mínimo</h2>
+        <span class="n-amostra">baseado no pico mais alto da curva de capital</span>
+      </div>
+
+      <div class="grade grade-4">
+        <div class="celula"><div class="rot" data-termo="drawdown_maximo">Máximo drawdown</div><div class="val neg">R$ 51.890</div></div>
+        <div class="celula"><div class="rot">Início do drawdown</div><div class="val">06/05</div></div>
+        <div class="celula"><div class="rot">Pior ponto</div><div class="val">16/06</div></div>
+        <div class="celula" style="border-right:none;"><div class="rot">Recuperado até hoje?</div><div class="val neg">Não</div></div>
+      </div>
+
+      <div class="linha-item" style="margin-top:18px;">
+        <div class="rot">Margem por contrato (referência WIN)</div>
+        <div class="val">R$ 500</div>
+      </div>
+      <div class="linha-item">
+        <div class="rot" data-termo="capital_minimo">Capital mínimo sugerido</div>
+        <div class="val pos">R$ 104.280</div>
+      </div>
+
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        Este cálculo usa o drawdown real (com o sizing variável que você de fato operou) e um
+        <span data-termo="fator_seguranca">fator de segurança</span> de 2x. É um número conservador de
+        propósito — mas também reflete o custo real de operar com tamanho de posição inconsistente. Uma
+        versão deste mesmo drawdown <span data-termo="normalizado_1_contrato">normalizada a 1 contrato</span>
+        fica muito menor — essa comparação vive na aba de Simulações, dentro de Estratégia Financeira.
+      </div>
+    </section>
+
+    <!-- ===== RACHAS POR OPERAÇÃO — CONTEXTO SECUNDÁRIO ===== -->
+    <section class="secao secao-secundaria">
+      <div class="secao-header">
+        <h2>Rachas por operação<span class="rotulo-contexto">Contexto comportamental — não usado no cálculo de capital</span></h2>
+        <span class="n-amostra">n = 817 operações</span>
+      </div>
+      <p class="secao-intro">
+        Esta visão não entra em nenhum cálculo de capital — serve só para entender seu comportamento
+        dentro do próprio dia de operação.
+      </p>
+
+      <div class="grade grade-4">
+        <div class="celula"><div class="rot">Racha máxima de perda</div><div class="val neg">10</div></div>
+        <div class="celula"><div class="rot">Racha máxima de ganho</div><div class="val pos">25</div></div>
+        <div class="celula"><div class="rot">Win rate por operação</div><div class="val">69,9%</div></div>
+        <div class="celula" style="border-right:none;"><div class="rot">Eventos de racha perdedora</div><div class="val">133</div></div>
+      </div>
+
+      <div class="comparativo-rachas" style="margin-top:22px;">
+        <div class="coluna-racha">
+          <h3>Observado no seu histórico</h3>
+          <div class="barra-racha"><div class="rot-n">1</div><div class="trilho"><div class="preenchido" style="width:100%"></div></div><div class="valor-n">80 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">2</div><div class="trilho"><div class="preenchido" style="width:34%"></div></div><div class="valor-n">27 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">3</div><div class="trilho"><div class="preenchido" style="width:15%"></div></div><div class="valor-n">12 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">4</div><div class="trilho"><div class="preenchido" style="width:7.5%"></div></div><div class="valor-n">6 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">5</div><div class="trilho"><div class="preenchido" style="width:5%"></div></div><div class="valor-n">4 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">7</div><div class="trilho"><div class="preenchido" style="width:2.5%"></div></div><div class="valor-n">2 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">8</div><div class="trilho"><div class="preenchido" style="width:1.25%"></div></div><div class="valor-n">1 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">10</div><div class="trilho"><div class="preenchido" style="width:1.25%"></div></div><div class="valor-n">1 de 133</div></div>
+        </div>
+        <div class="coluna-racha">
+          <h3 data-termo="racha_teorica">Esperado se fosse acaso puro</h3>
+          <div class="barra-racha"><div class="rot-n">1</div><div class="trilho"><div class="preenchido esperado" style="width:100%"></div></div><div class="valor-n">≈ 92,9 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">2</div><div class="trilho"><div class="preenchido esperado" style="width:30%"></div></div><div class="valor-n">≈ 28,0 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">3</div><div class="trilho"><div class="preenchido esperado" style="width:9%"></div></div><div class="valor-n">≈ 8,4 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">4</div><div class="trilho"><div class="preenchido esperado" style="width:2.7%"></div></div><div class="valor-n">≈ 2,5 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">5</div><div class="trilho"><div class="preenchido esperado" style="width:0.8%"></div></div><div class="valor-n">≈ 0,8 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">7</div><div class="trilho"><div class="preenchido esperado" style="width:0.07%"></div></div><div class="valor-n">≈ 0,07 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">8</div><div class="trilho"><div class="preenchido esperado" style="width:0.02%"></div></div><div class="valor-n">≈ 0,02 de 133</div></div>
+          <div class="barra-racha"><div class="rot-n">10</div><div class="trilho"><div class="preenchido esperado" style="width:0%"></div></div><div class="valor-n">≈ 0,002 de 133</div></div>
+        </div>
+      </div>
+      <div class="legenda-racha">
+        <span><span class="quad observado"></span>Observado</span>
+        <span><span class="quad esperado"></span>Esperado (independência estatística)</span>
+      </div>
+
+      <div class="nota-analista">
+        <strong>Nota do analista</strong>
+        Aqui o desvio é muito mais forte: a racha de 7 operações perdedoras aconteceu 2 vezes, quando o
+        esperado era ≈0,07 — quase 30x mais frequente que o acaso explicaria. A racha de 10 é ainda mais
+        extrema. Combinado com a seção anterior (onde o efeito por dia é fraco), a leitura mais provável é
+        que o padrão de agrupamento acontece <em>dentro do mesmo dia</em> — operar mal depois de uma
+        perda, no mesmo pregão — e não de um dia contaminar o próximo. É um indício a favor de que um
+        <span data-termo="circuit_breaker">circuit breaker</span> diário (cortar o dia ao atingir o limite)
+        tende a conter bem esse padrão, já que ele parece se resolver sozinho de um dia para o outro.
+      </div>
+    </section>
+
+  </main>
+
+  <footer>Rachas &amp; Drawdown · Controle de Risco — dados reais, conexão ao vivo ainda pendente</footer>
+
+<script src="nav.js"></script>
+<script src="glossario.js"></script>
+<script>iniciarPagina({ paginaAtiva: 'risco_rachas_drawdown.html', mostrarAbas: true, grupoAbas: 'risco', eyebrow: 'Controle de Risco' });</script>
+</body>
+</html>
