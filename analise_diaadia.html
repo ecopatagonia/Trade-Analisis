@@ -237,9 +237,15 @@ footer{ max-width:680px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Pl
   /* ===================== Verificação plano × CSV ===================== */
 
   // Um dia "respeita o plano" se o CSV não rompe nenhum dos dois limites verificáveis:
-  // perda máxima (mínimo do acumulado intradia, na ordem de entrada) e máximo de contratos.
+  // perda máxima (mínimo do acumulado intradia) e máximo de contratos. A curva é
+  // ordenada pelo FECHAMENTO estimado (Fecha + Duracion_min): o resultado se realiza
+  // no fechamento da operação, não na entrada.
+  function cierreEstimado(t) {
+    return dataDoTrade(t).getTime() + (Number(t.Duracion_min) || 0) * 60000;
+  }
+
   function verificarDia(tradesDia, perdaMax, contratosMax) {
-    const ordenados = ordenarPorFecha(tradesDia);
+    const ordenados = [...tradesDia].sort((a, b) => cierreEstimado(a) - cierreEstimado(b));
     let acum = 0, minAcum = 0, maxContratos = 0, resultado = 0;
     ordenados.forEach(t => {
       const r = Number(t['Resultado_R$']) || 0;

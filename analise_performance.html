@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Análise de Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; white-space:nowrap; cursor:pointer; }
+.aba:hover{ color:var(--tinta); }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border:1px solid var(--linha-forte); border-bottom:none; border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+
+main{ max-width:680px; margin:0 auto; padding:38px 28px 80px; }
+
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.form-intro p{ font-size:14.5px; color:var(--tinta-suave); line-height:1.6; margin-top:7px; }
+.form-intro{ margin-bottom:30px; }
+.secao{ margin-bottom:36px; }
+.secao .secao-header{ border-bottom-width:1px; }
+.secao .secao-header h2{ font-size:16.5px; }
+
+.dist-linha{ display:flex; align-items:center; gap:12px; padding:8px 0; }
+.dist-nome{ font-family:'IBM Plex Mono', monospace; font-size:12px; width:120px; flex-shrink:0; color:var(--tinta-suave); }
+.dist-barra-wrap{ flex:1; background:var(--papel-escuro); border:1px solid var(--linha); height:20px; }
+.dist-barra{ height:100%; background:var(--tinta); opacity:0.85; }
+.dist-barra.destaque{ background:var(--vermelho-prejuizo); }
+.dist-n{ font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600; width:56px; text-align:right; flex-shrink:0; }
+
+.bloqueado{ border:1px dashed var(--linha-forte); padding:22px 20px; margin-bottom:30px; background:rgba(255,255,255,0.2); color:var(--tinta-suave); }
+.bloqueado h3{ font-family:'Fraunces', serif; font-size:16.5px; font-weight:600; color:var(--tinta); margin-bottom:5px; }
+.bloqueado p{ font-size:13.5px; line-height:1.55; margin-bottom:12px; }
+.progresso-wrap{ background:var(--papel-escuro); border:1px solid var(--linha); height:14px; }
+.progresso{ height:100%; background:var(--ambar-alerta); opacity:0.75; }
+.progresso-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; margin-top:6px; color:var(--ambar-alerta); }
+
+table.planilha{ width:100%; border-collapse:collapse; font-size:14px; }
+table.planilha th{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); text-align:left; padding:8px 11px; border-bottom:2px solid var(--tinta); }
+table.planilha td{ padding:9px 11px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; }
+table.planilha td:last-child{ text-align:right; }
+.pos{ color:var(--verde-lucro); }
+.neg{ color:var(--vermelho-prejuizo); }
+.neutro-amb{ color:var(--ambar-alerta); }
+
+.quadrantes{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.quadrante{ border:1px solid var(--linha-forte); padding:14px 16px; background:rgba(255,255,255,0.3); }
+.quadrante .q-rot{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:6px; line-height:1.4; }
+.quadrante .q-val{ font-family:'IBM Plex Mono', monospace; font-size:22px; font-weight:600; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:14px 18px; font-size:13.5px; line-height:1.6; margin:16px 0 0; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; color:var(--tinta); }
+
+.cta-restrito{ border:2px dashed var(--linha-forte); padding:40px 28px; text-align:center; background:rgba(255,255,255,0.35); }
+.cta-restrito h3{ font-family:'Fraunces', serif; font-size:20px; font-weight:600; margin-bottom:10px; }
+.cta-restrito p{ font-size:14px; color:var(--tinta-suave); line-height:1.6; max-width:440px; margin:0 auto; }
+
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--linha); font-size:14.5px; gap:12px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-family:'IBM Plex Mono', monospace; font-weight:600; text-align:right; }
+
+.vazio{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); padding:14px 0; }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+
+footer{ max-width:680px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <nav class="abas" id="nav-diario" style="display:none;">
+    <a class="aba" href="diario_trade.html">Diário de Hoje</a>
+    <a class="aba" href="analise_diaadia.html">Análise Dia a Dia</a>
+    <a class="aba ativa">Análise de Performance</a>
+    <a class="aba" href="diario_trade.html">Editar Perfil</a>
+  </nav>
+
+  <main id="conteudo" style="display:none;">
+
+    <div class="cta-restrito" id="sem-acesso" style="display:none;">
+      <h3>Acesso restrito</h3>
+      <p>A Análise de Performance é liberada individualmente pelo administrador.
+      Fale com o mentor do grupo para habilitar o seu acesso.</p>
+    </div>
+
+    <div id="analises" style="display:none;">
+
+    <div class="form-intro">
+      <div class="secao-header"><h2>Diário × Realidade</h2><span class="n-amostra" id="n-header">—</span></div>
+      <p>Cada seção libera quando há amostra suficiente para dizer algo sério.
+      Preencher o diário e carregar o CSV é o que destrava as análises.</p>
+    </div>
+
+    <div class="vazio" id="sem-dados" style="display:none;">O diário ainda não tem registros. As análises começam a aparecer com os primeiros dias preenchidos.</div>
+
+    <!-- ===== Quem tem operado (desde o dia 1) ===== -->
+    <section class="secao" id="sec-quem" style="display:none;">
+      <div class="secao-header"><h2>Quem tem operado</h2><span class="n-amostra" id="n-quem">—</span></div>
+      <div id="dist-arquetipos"></div>
+      <div class="nota-analista" id="nota-quem" style="display:none;">
+        <strong>Nota do analista</strong>
+        <span id="nota-quem-texto"></span>
+      </div>
+    </section>
+
+    <!-- ===== Constância do plano (desde o dia 1) ===== -->
+    <section class="secao" id="sec-constancia" style="display:none;">
+      <div class="secao-header"><h2>Constância do plano</h2><span class="n-amostra" id="n-constancia">—</span></div>
+      <table class="planilha"><tbody id="tabela-constancia"></tbody></table>
+    </section>
+
+    <!-- ===== 🔒 30 · Custo de cada personagem ===== -->
+    <div class="bloqueado" id="lock-custo">
+      <h3>🔒 O custo de cada personagem</h3>
+      <p>Expectancy média dos seus dias, segmentada pelo arquétipo declarado.
+      Ex.: "dias Vingador: − R$ X · dias Estrategista: + R$ Y".</p>
+      <div class="progresso-wrap"><div class="progresso" id="prog-custo"></div></div>
+      <div class="progresso-label" id="prog-custo-label"></div>
+    </div>
+    <section class="secao" id="sec-custo" style="display:none;">
+      <div class="secao-header"><h2>O custo de cada personagem</h2><span class="n-amostra" id="n-custo">—</span></div>
+      <table class="planilha">
+        <thead><tr><th>Personagem</th><th>Dias</th><th style="text-align:right;">Resultado médio/dia</th></tr></thead>
+        <tbody id="tabela-custo"></tbody>
+      </table>
+    </section>
+
+    <!-- ===== 🔒 30 · Aderência ===== -->
+    <div class="bloqueado" id="lock-aderencia">
+      <h3>🔒 Aderência: o que você declara × o que o CSV mostra</h3>
+      <p>Cada "respeitei" do pós-mercado, conferido item por item contra os dados.
+      Sua calibração como observador de si mesmo.</p>
+      <div class="progresso-wrap"><div class="progresso" id="prog-aderencia"></div></div>
+      <div class="progresso-label" id="prog-aderencia-label"></div>
+    </div>
+    <section class="secao" id="sec-aderencia" style="display:none;">
+      <div class="secao-header"><h2>Aderência: declarado × CSV</h2><span class="n-amostra" id="n-aderencia">—</span></div>
+      <table class="planilha">
+        <thead><tr><th>Item do plano</th><th>Confirmadas ✓</th><th>Contradições ✗</th><th>Honestas ✗</th><th style="text-align:right;">Divergentes</th></tr></thead>
+        <tbody id="tabela-aderencia"></tbody>
+      </table>
+      <div class="linha-item" style="margin-top:8px;">
+        <span class="rot">Calibração: % de "respeitei" confirmados pelo CSV</span>
+        <span class="val" id="val-calibracao">—</span>
+      </div>
+      <div class="nota-analista" style="margin-top:14px;">
+        <strong>Como ler</strong>
+        Contradição = declarou "respeitei" e o CSV mostra violação (ponto cego).
+        Honesta = declarou a violação e o CSV confirma (problema de disciplina, não de percepção).
+        Divergente = declarou violação que o CSV não enxerga na granularidade dos fechamentos.
+      </div>
+    </section>
+
+    <!-- ===== 🔒 30 · Processo × Resultado ===== -->
+    <div class="bloqueado" id="lock-processo">
+      <h3>🔒 Processo × Resultado</h3>
+      <p>Seus dias em quatro quadrantes: satisfeito e no lucro, satisfeito no prejuízo,
+      insatisfeito no lucro ("escapei"), insatisfeito no prejuízo.</p>
+      <div class="progresso-wrap"><div class="progresso" id="prog-processo"></div></div>
+      <div class="progresso-label" id="prog-processo-label"></div>
+    </div>
+    <section class="secao" id="sec-processo" style="display:none;">
+      <div class="secao-header"><h2>Processo × Resultado</h2><span class="n-amostra" id="n-processo">—</span></div>
+      <div class="quadrantes">
+        <div class="quadrante"><div class="q-rot">Satisfeito · no lucro</div><div class="q-val pos" id="q-sl">—</div></div>
+        <div class="quadrante"><div class="q-rot">Satisfeito · no prejuízo</div><div class="q-val" id="q-sp">—</div></div>
+        <div class="quadrante"><div class="q-rot">Insatisfeito · no lucro ("escapei")</div><div class="q-val neutro-amb" id="q-il">—</div></div>
+        <div class="quadrante"><div class="q-rot">Insatisfeito · no prejuízo</div><div class="q-val neg" id="q-ip">—</div></div>
+      </div>
+      <div class="vazio" id="nota-neutros"></div>
+    </section>
+
+    <!-- ===== 🔒 30 · Devolução ===== -->
+    <div class="bloqueado" id="lock-devolucao">
+      <h3>🔒 Devolução: o que você teve em mãos × onde fechou</h3>
+      <p>Pico do resultado dentro do dia contra o fechamento. Quantas vezes a meta
+      esteve ao alcance e o dia terminou no vermelho — e quanto custou devolver.</p>
+      <div class="progresso-wrap"><div class="progresso" id="prog-devolucao"></div></div>
+      <div class="progresso-label" id="prog-devolucao-label"></div>
+    </div>
+    <section class="secao" id="sec-devolucao" style="display:none;">
+      <div class="secao-header"><h2>Devolução</h2><span class="n-amostra" id="n-devolucao">—</span></div>
+      <div class="linha-item">
+        <span class="rot">Devolução por dia (pico − fechamento)</span>
+        <span class="val" id="val-giveback">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot">Dias com ≥75% da meta em mãos que fecharam negativos</span>
+        <span class="val" id="val-meta-maos">—</span>
+      </div>
+      <table class="planilha" style="margin-top:14px;">
+        <thead><tr><th>Personagem declarado</th><th>Dias</th><th style="text-align:right;">Devolução mediana</th></tr></thead>
+        <tbody id="tabela-devolucao"></tbody>
+      </table>
+      <div class="vazio">A curva intradia usa resultados realizados, ordenados pelo fechamento estimado de cada operação.
+      O flutuante não existe no CSV — o pico medido é um piso do pico real.</div>
+    </section>
+
+    <!-- ===== 🔒 90 · O contraste ===== -->
+    <div class="bloqueado" id="lock-contraste">
+      <h3>🔒 O contraste: quem você achava que era × quem operou</h3>
+      <p>Fraqueza declarada no perfil × arquétipos mais frequentes do diário × assinatura
+      dos dados. A medida do seu autoconhecimento.</p>
+      <div class="progresso-wrap"><div class="progresso" id="prog-contraste"></div></div>
+      <div class="progresso-label" id="prog-contraste-label"></div>
+    </div>
+    <section class="secao" id="sec-contraste" style="display:none;">
+      <div class="secao-header"><h2>O contraste</h2><span class="n-amostra" id="n-contraste">—</span></div>
+      <div class="linha-item"><span class="rot">Fraqueza declarada no perfil</span><span class="val" id="val-contraste-declarado">—</span></div>
+      <div class="linha-item"><span class="rot">Quem mais operou nos seus dias (fora o Estrategista)</span><span class="val" id="val-contraste-observado">—</span></div>
+      <div class="linha-item"><span class="rot">Assinatura do CSV: tamanho médio em perdedoras ÷ ganhadoras</span><span class="val" id="val-contraste-ratio">—</span></div>
+      <div class="linha-item"><span class="rot">Assinatura do CSV: devolução mediana por dia</span><span class="val" id="val-contraste-giveback">—</span></div>
+    </section>
+
+    </div>
+  </main>
+
+  <div class="carregando" id="carregando">Carregando análise...</div>
+
+  <footer>As análises liberam com a amostra · preencher o diário e carregar o CSV é o que destrava</footer>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  /* ===================== Constantes ===================== */
+
+  const NOMES_ARQ = {
+    estrategista: 'O Estrategista', teimoso: 'O Teimoso', vingador: 'O Vingador',
+    apostador: 'O Apostador', medroso: 'O Medroso', euforico: 'O Eufórico'
+  };
+  const ORDEM_ARQ = ['estrategista', 'teimoso', 'vingador', 'apostador', 'medroso', 'euforico'];
+  const LIMIAR_30 = 30;
+  const LIMIAR_90 = 90;
+
+  /* ===================== Helpers ===================== */
+
+  function chaveDiaLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function mediana(valores) {
+    if (valores.length === 0) return null;
+    const s = [...valores].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 === 1 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  // "R$ 4.000" sem casas decimais quando inteiro (formato das tabelas)
+  function reaisCurto(v) {
+    const txt = formatarReais(v);
+    return txt.endsWith(',00') ? txt.slice(0, -3) : txt;
+  }
+
+  function faixaMediana(valores, prefixo) {
+    if (valores.length === 0) return '—';
+    const min = Math.min(...valores), max = Math.max(...valores), med = mediana(valores);
+    const p = prefixo || '';
+    if (min === max) return p + reaisCurto(min) + ' · todos os dias';
+    return p + reaisCurto(min) + ' a ' + p + reaisCurto(max) + ' · mediana ' + p + reaisCurto(med);
+  }
+
+  function cierreEstimado(t) {
+    return dataDoTrade(t).getTime() + (Number(t.Duracion_min) || 0) * 60000;
+  }
+
+  // Curva intradia ordenada pelo fechamento estimado (mesmo critério da Análise Dia a Dia)
+  function curvaDia(tradesDia) {
+    const ordenados = [...tradesDia].sort((a, b) => cierreEstimado(a) - cierreEstimado(b));
+    let acum = 0, pico = 0, minAcum = 0, maxContratos = 0;
+    ordenados.forEach(t => {
+      acum += Number(t['Resultado_R$']) || 0;
+      if (acum > pico) pico = acum;
+      if (acum < minAcum) minAcum = acum;
+      const q = Number(t.Cantidad) || 0;
+      if (q > maxContratos) maxContratos = q;
+    });
+    return { resultado: acum, pico, minAcum, maxContratos, giveback: pico - acum, n: tradesDia.length };
+  }
+
+  /* ===================== Carga ===================== */
+
+  async function carregar() {
+    const sessao = iniciarPagina({ paginaAtiva: 'analise_performance.html', mostrarAbas: false, eyebrow: 'Análise de Performance' });
+    if (!sessao) return;
+
+    try {
+      const respEstado = await fetch(APPSCRIPT_URL + '?action=diario_estado&token=' + encodeURIComponent(sessao.token) + '&fecha=' + chaveDiaLocal(new Date()));
+      const estado = await respEstado.json();
+      if (!estado.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + estado.error;
+        return;
+      }
+      if (!estado.perfil) {
+        window.location.href = 'diario_trade.html';
+        return;
+      }
+
+      document.getElementById('nav-diario').style.display = 'flex';
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+
+      if (estado.acesso_analise !== 'Sim') {
+        document.getElementById('sem-acesso').style.display = 'block';
+        return;
+      }
+      document.getElementById('analises').style.display = 'block';
+
+      const [respTrades, respRegs] = await Promise.all([
+        fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessao.token)),
+        fetch(APPSCRIPT_URL + '?action=diario_registros&token=' + encodeURIComponent(sessao.token))
+      ]);
+      const dataTrades = await respTrades.json();
+      const dataRegs = await respRegs.json();
+      if (!dataTrades.ok || !dataRegs.ok) {
+        document.getElementById('sem-dados').style.display = 'block';
+        document.getElementById('sem-dados').textContent = 'Erro ao carregar os dados: ' + (dataTrades.error || dataRegs.error);
+        return;
+      }
+
+      renderTudo(estado.perfil, dataRegs.registros, dataTrades.trades);
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao carregar a análise.';
+    }
+  }
+
+  /* ===================== Cálculo e render ===================== */
+
+  function renderTudo(perfil, registros, trades) {
+    const tradesPorDia = {};
+    trades.forEach(t => {
+      const chave = chaveDiaLocal(dataDoTrade(t));
+      if (!tradesPorDia[chave]) tradesPorDia[chave] = [];
+      tradesPorDia[chave].push(t);
+    });
+
+    const diasPre = registros.filter(r => r.temPre);
+    const diasPos = registros.filter(r => r.temPos);
+    // Dias analisáveis: diário completo + CSV do dia — a moeda que destrava as seções
+    const diasAnalise = registros
+      .filter(r => r.temPre && r.temPos && tradesPorDia[r.Fecha])
+      .map(r => Object.assign({}, r, { curva: curvaDia(tradesPorDia[r.Fecha]) }));
+
+    const nAnalise = diasAnalise.length;
+    document.getElementById('n-header').textContent = nAnalise + (nAnalise === 1 ? ' dia com diário + CSV' : ' dias com diário + CSV');
+
+    if (registros.length === 0) {
+      document.getElementById('sem-dados').style.display = 'block';
+      return;
+    }
+
+    renderQuem(perfil, diasPos);
+    renderConstancia(diasPre, diasPos);
+    renderCusto(diasAnalise);
+    renderAderencia(diasAnalise);
+    renderProcesso(diasPos, tradesPorDia);
+    renderDevolucao(diasAnalise);
+    renderContraste(perfil, diasPos, diasAnalise, trades);
+  }
+
+  function progresso(idBase, atual, limiar, rotulo) {
+    document.getElementById('prog-' + idBase).style.width = Math.min(100, (atual / limiar) * 100) + '%';
+    document.getElementById('prog-' + idBase + '-label').textContent = atual + ' de ' + limiar + ' ' + rotulo;
+  }
+
+  function desbloquear(idBase, aberto) {
+    document.getElementById('lock-' + idBase).style.display = aberto ? 'none' : 'block';
+    document.getElementById('sec-' + idBase).style.display = aberto ? 'block' : 'none';
+  }
+
+  /* ----- Quem tem operado ----- */
+  function renderQuem(perfil, diasPos) {
+    if (diasPos.length === 0) return;
+    document.getElementById('sec-quem').style.display = 'block';
+    document.getElementById('n-quem').textContent = 'últimos ' + diasPos.length + ' dias com diário';
+
+    const contagem = {};
+    ORDEM_ARQ.forEach(a => contagem[a] = 0);
+    diasPos.forEach(r => { if (contagem[r.Arquetipo] !== undefined) contagem[r.Arquetipo]++; });
+    const maxN = Math.max(1, ...Object.values(contagem));
+
+    // Fraqueza observada: o arquétipo mais frequente fora do Estrategista
+    let topFraqueza = null, topN = 0;
+    ORDEM_ARQ.forEach(a => {
+      if (a !== 'estrategista' && contagem[a] > topN) { topFraqueza = a; topN = contagem[a]; }
+    });
+
+    const ordenados = [...ORDEM_ARQ].sort((a, b) => contagem[b] - contagem[a]);
+    document.getElementById('dist-arquetipos').innerHTML = ordenados.map(a => {
+      const n = contagem[a];
+      const destaque = (a === topFraqueza && n > 0) ? ' destaque' : '';
+      const barra = n > 0 ? '<div class="dist-barra' + destaque + '" style="width:' + Math.round((n / maxN) * 100) + '%;"></div>' : '';
+      return '<div class="dist-linha"><span class="dist-nome">' + NOMES_ARQ[a] + '</span>' +
+        '<div class="dist-barra-wrap">' + barra + '</div><span class="dist-n">' + n + '×</span></div>';
+    }).join('');
+
+    // Nota do analista (baseada em regra, sem opinião)
+    const declarada = perfil.Fraqueza_Principal;
+    if (topFraqueza && declarada) {
+      let texto;
+      if (topFraqueza === declarada) {
+        texto = 'Sua fraqueza declarada no perfil foi ' + NOMES_ARQ[declarada] + ' — e é também quem mais apareceu fora do Estrategista (' + topN + '×). O autodiagnóstico e o diário coincidem.';
+      } else {
+        texto = 'Sua fraqueza declarada no perfil foi ' + NOMES_ARQ[declarada] + ' — mas em ' + diasPos.length + ' dias, quem mais apareceu fora do Estrategista foi ' + NOMES_ARQ[topFraqueza] + ' (' + topN + '×).';
+      }
+      if (diasPos.length < LIMIAR_90) texto += ' Amostra ainda pequena; o contraste formal libera aos 90 dias.';
+      document.getElementById('nota-quem-texto').textContent = texto;
+      document.getElementById('nota-quem').style.display = 'block';
+    }
+  }
+
+  /* ----- Constância do plano ----- */
+  function renderConstancia(diasPre, diasPos) {
+    if (diasPre.length === 0 && diasPos.length === 0) return;
+    document.getElementById('sec-constancia').style.display = 'block';
+    document.getElementById('n-constancia').textContent = 'n = ' + diasPre.length + ' dias com plano';
+
+    const perdas = diasPre.map(r => Number(r.Perda_Max)).filter(v => v > 0);
+    const contratos = diasPre.map(r => Number(r.Contratos_Max)).filter(v => v > 0);
+    const metas = diasPre.map(r => Number(r.Meta_Dia)).filter(v => v > 0);
+    const sat = { satisfeito: 0, neutro: 0, insatisfeito: 0 };
+    diasPos.forEach(r => { if (sat[r.Satisfacao] !== undefined) sat[r.Satisfacao]++; });
+
+    const contrTxt = contratos.length === 0 ? '—' :
+      (Math.min(...contratos) === Math.max(...contratos)
+        ? Math.min(...contratos) + ' · todos os dias'
+        : Math.min(...contratos) + ' a ' + Math.max(...contratos) + ' · mediana ' + mediana(contratos));
+
+    document.getElementById('tabela-constancia').innerHTML =
+      '<tr><td>Perda máxima declarada</td><td>' + faixaMediana(perdas, '− ') + '</td></tr>' +
+      '<tr><td>Contratos máx. declarados</td><td>' + contrTxt + '</td></tr>' +
+      '<tr><td>Meta de ganho declarada</td><td>' + faixaMediana(metas, '') + '</td></tr>' +
+      '<tr><td>Satisfação com a forma de operar</td><td>Satisfeito ' + sat.satisfeito + ' · Neutro ' + sat.neutro + ' · Insatisfeito ' + sat.insatisfeito + '</td></tr>';
+  }
+
+  /* ----- Custo de cada personagem (🔒 30) ----- */
+  function renderCusto(diasAnalise) {
+    const aberto = diasAnalise.length >= LIMIAR_30;
+    desbloquear('custo', aberto);
+    if (!aberto) { progresso('custo', diasAnalise.length, LIMIAR_30, 'dias com diário + CSV'); return; }
+
+    document.getElementById('n-custo').textContent = 'n = ' + diasAnalise.length + ' dias';
+    const grupos = {};
+    diasAnalise.forEach(d => {
+      if (!grupos[d.Arquetipo]) grupos[d.Arquetipo] = [];
+      grupos[d.Arquetipo].push(d.curva.resultado);
+    });
+    const linhas = Object.keys(grupos).map(a => {
+      const vals = grupos[a];
+      const exp = vals.reduce((x, y) => x + y, 0) / vals.length;
+      return { a, n: vals.length, exp };
+    }).sort((x, y) => x.exp - y.exp);
+
+    document.getElementById('tabela-custo').innerHTML = linhas.map(l => {
+      const cls = l.exp >= 0 ? 'pos' : 'neg';
+      const alerta = l.n < 5 ? ' <span class="neutro-amb">(n baixo)</span>' : '';
+      return '<tr><td>' + NOMES_ARQ[l.a] + '</td><td>' + l.n + alerta + '</td><td class="' + cls + '">' +
+        (l.exp >= 0 ? '+ ' : '− ') + reaisCurto(Math.abs(l.exp)) + '</td></tr>';
+    }).join('');
+  }
+
+  /* ----- Aderência (🔒 30) ----- */
+  function renderAderencia(diasAnalise) {
+    const aberto = diasAnalise.length >= LIMIAR_30;
+    desbloquear('aderencia', aberto);
+    if (!aberto) { progresso('aderencia', diasAnalise.length, LIMIAR_30, 'dias com diário + CSV'); return; }
+
+    document.getElementById('n-aderencia').textContent = 'n = ' + diasAnalise.length + ' dias';
+
+    function contarItem(declKey, okFn) {
+      const c = { conf: 0, contra: 0, honesta: 0, diverg: 0, simTotal: 0 };
+      diasAnalise.forEach(d => {
+        const decl = d[declKey] === 'Sim';
+        const ok = okFn(d);
+        if (decl) { c.simTotal++; ok ? c.conf++ : c.contra++; }
+        else { ok ? c.diverg++ : c.honesta++; }
+      });
+      return c;
+    }
+    const perda = contarItem('Resp_PerdaMax', d => d.curva.minAcum >= -(Number(d.Perda_Max) || Infinity));
+    const contr = contarItem('Resp_Contratos', d => d.curva.maxContratos <= (Number(d.Contratos_Max) || Infinity));
+
+    function linha(nome, c) {
+      return '<tr><td>' + nome + '</td><td class="pos">' + c.conf + '</td><td class="neg">' + c.contra + '</td><td>' + c.honesta + '</td><td>' + c.diverg + '</td></tr>';
+    }
+    document.getElementById('tabela-aderencia').innerHTML = linha('Perda máxima', perda) + linha('Máx. de contratos', contr);
+
+    const simTotal = perda.simTotal + contr.simTotal;
+    const confTotal = perda.conf + contr.conf;
+    document.getElementById('val-calibracao').textContent = simTotal === 0 ? '—' : Math.round((confTotal / simTotal) * 100) + '%';
+  }
+
+  /* ----- Processo × Resultado (🔒 30) ----- */
+  function renderProcesso(diasPos, tradesPorDia) {
+    const elegiveis = diasPos.filter(r => tradesPorDia[r.Fecha]);
+    const aberto = elegiveis.length >= LIMIAR_30;
+    desbloquear('processo', aberto);
+    if (!aberto) { progresso('processo', elegiveis.length, LIMIAR_30, 'dias com pós + CSV'); return; }
+
+    let sl = 0, sp = 0, il = 0, ip = 0, neutros = 0;
+    elegiveis.forEach(r => {
+      const res = curvaDia(tradesPorDia[r.Fecha]).resultado;
+      if (r.Satisfacao === 'neutro') { neutros++; return; }
+      const lucro = res >= 0;
+      if (r.Satisfacao === 'satisfeito') { lucro ? sl++ : sp++; }
+      else if (r.Satisfacao === 'insatisfeito') { lucro ? il++ : ip++; }
+    });
+    document.getElementById('n-processo').textContent = 'n = ' + (elegiveis.length - neutros) + ' dias';
+    document.getElementById('q-sl').textContent = sl;
+    document.getElementById('q-sp').textContent = sp;
+    document.getElementById('q-il').textContent = il;
+    document.getElementById('q-ip').textContent = ip;
+    document.getElementById('nota-neutros').textContent = neutros > 0 ? neutros + ' dias "neutro" fora dos quadrantes.' : '';
+  }
+
+  /* ----- Devolução (🔒 30) ----- */
+  function renderDevolucao(diasAnalise) {
+    const aberto = diasAnalise.length >= LIMIAR_30;
+    desbloquear('devolucao', aberto);
+    if (!aberto) { progresso('devolucao', diasAnalise.length, LIMIAR_30, 'dias com diário + CSV'); return; }
+
+    document.getElementById('n-devolucao').textContent = 'n = ' + diasAnalise.length + ' dias';
+
+    const givebacks = diasAnalise.map(d => d.curva.giveback);
+    document.getElementById('val-giveback').textContent =
+      'mediana ' + reaisCurto(mediana(givebacks)) + ' · máx. ' + reaisCurto(Math.max(...givebacks));
+
+    const devolvidos = diasAnalise.filter(d => {
+      const meta = Number(d.Meta_Dia) || 0;
+      return meta > 0 && d.curva.pico >= 0.75 * meta && d.curva.resultado < 0;
+    });
+    const custo = devolvidos.reduce((s, d) => s + d.curva.giveback, 0);
+    const elMM = document.getElementById('val-meta-maos');
+    elMM.textContent = devolvidos.length === 0 ? '0 dias' : devolvidos.length + (devolvidos.length === 1 ? ' dia' : ' dias') + ' · devolução de ' + reaisCurto(custo);
+    elMM.className = 'val ' + (devolvidos.length === 0 ? 'pos' : 'neg');
+
+    const grupos = {};
+    diasAnalise.forEach(d => {
+      if (!grupos[d.Arquetipo]) grupos[d.Arquetipo] = [];
+      grupos[d.Arquetipo].push(d.curva.giveback);
+    });
+    const linhas = Object.keys(grupos).map(a => ({ a, n: grupos[a].length, med: mediana(grupos[a]) }))
+      .sort((x, y) => y.med - x.med);
+    document.getElementById('tabela-devolucao').innerHTML = linhas.map(l => {
+      const alerta = l.n < 5 ? ' <span class="neutro-amb">(n baixo)</span>' : '';
+      return '<tr><td>' + NOMES_ARQ[l.a] + '</td><td>' + l.n + alerta + '</td><td>' + reaisCurto(l.med) + '</td></tr>';
+    }).join('');
+  }
+
+  /* ----- O contraste (🔒 90) ----- */
+  function renderContraste(perfil, diasPos, diasAnalise, trades) {
+    const aberto = diasPos.length >= LIMIAR_90;
+    desbloquear('contraste', aberto);
+    if (!aberto) { progresso('contraste', diasPos.length, LIMIAR_90, 'dias de diário'); return; }
+
+    document.getElementById('n-contraste').textContent = 'n = ' + diasPos.length + ' dias de diário';
+
+    const declarada = NOMES_ARQ[perfil.Fraqueza_Principal] || '—';
+    const secundaria = (perfil.Fraqueza_Secundaria && perfil.Fraqueza_Secundaria !== 'nenhuma') ? ' · 2ª: ' + NOMES_ARQ[perfil.Fraqueza_Secundaria] : '';
+    document.getElementById('val-contraste-declarado').textContent = declarada + secundaria;
+
+    const contagem = {};
+    diasPos.forEach(r => { if (r.Arquetipo && r.Arquetipo !== 'estrategista') contagem[r.Arquetipo] = (contagem[r.Arquetipo] || 0) + 1; });
+    const top = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a]).slice(0, 2)
+      .map(a => NOMES_ARQ[a] + ' (' + contagem[a] + '×)').join(' · ');
+    document.getElementById('val-contraste-observado').textContent = top || '—';
+
+    const medias = calcularMediaPorResultado(trades, 'Cantidad');
+    const ratio = (medias.ganhadoras.media && medias.perdedoras.media) ? (medias.perdedoras.media / medias.ganhadoras.media) : null;
+    document.getElementById('val-contraste-ratio').textContent = ratio === null ? '—' : ratio.toFixed(2) + '×';
+
+    const gm = mediana(diasAnalise.map(d => d.curva.giveback));
+    document.getElementById('val-contraste-giveback').textContent = gm === null ? '—' : reaisCurto(gm);
+  }
+
+  carregar();
+</script>
+</body>
+</html>
