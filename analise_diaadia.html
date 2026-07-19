@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Análise Dia a Dia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; white-space:nowrap; cursor:pointer; }
+.aba:hover{ color:var(--tinta); }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border:1px solid var(--linha-forte); border-bottom:none; border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+
+main{ max-width:680px; margin:0 auto; padding:38px 28px 80px; }
+
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+.form-intro p{ font-size:14.5px; color:var(--tinta-suave); line-height:1.6; margin-top:7px; }
+.form-intro{ margin-bottom:30px; }
+
+/* calendário */
+.cal-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-family:'IBM Plex Mono', monospace; font-size:13px; }
+.cal-nav button{ background:none; border:1px solid var(--linha-forte); padding:5px 12px; cursor:pointer; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+.cal-nav button:hover{ color:var(--tinta); }
+.cal-nav button:disabled{ opacity:0.4; cursor:default; }
+.calendario{ display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin-bottom:12px; }
+.cal-dow{ font-family:'IBM Plex Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); text-align:center; padding:6px 0; }
+.cal-dia{
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--linha-forte);
+  border:1px solid transparent; position:relative;
+}
+.cal-dia.com-dados{ color:var(--tinta); border-color:var(--linha-forte); background:rgba(255,255,255,0.4); cursor:pointer; font-weight:600; }
+.cal-dia.com-dados:hover{ background:var(--papel-escuro); }
+.cal-dia.dia-ok{ background:var(--verde-lucro-fundo); border-color:var(--verde-lucro); }
+.cal-dia.dia-violado{ background:var(--vermelho-prejuizo-fundo); border-color:var(--vermelho-prejuizo); }
+.cal-dia.selecionado{ background:var(--tinta); color:var(--papel); border-color:var(--tinta); }
+.cal-dia .ponto{ width:5px; height:5px; border-radius:50%; margin-top:3px; }
+.cal-dia .ponto.pos{ background:var(--verde-lucro); }
+.cal-dia .ponto.neg{ background:var(--vermelho-prejuizo); }
+.cal-dia.selecionado .ponto.pos{ background:var(--verde-lucro-fundo); }
+.cal-dia.selecionado .ponto.neg{ background:var(--vermelho-prejuizo-fundo); }
+.cal-legenda{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); margin-bottom:28px; line-height:1.8; }
+.leg-chip{ display:inline-block; width:11px; height:11px; border:1px solid; vertical-align:-1px; margin-right:3px; }
+
+/* cartão de análise do dia */
+.cartao-analise{ border:1px solid var(--linha-forte); margin-bottom:30px; background:rgba(255,255,255,0.3); }
+.cartao-analise-titulo{
+  font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--tinta-suave); padding:10px 18px; border-bottom:1px solid var(--linha); background:var(--papel-escuro);
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;
+}
+.cartao-analise-titulo strong{ color:var(--tinta); }
+.linha-item{ display:flex; justify-content:space-between; align-items:baseline; padding:11px 18px; border-bottom:1px solid var(--linha); font-size:14.5px; gap:12px; }
+.linha-item:last-child{ border-bottom:none; }
+.linha-item .rot{ color:var(--tinta-suave); }
+.linha-item .val{ font-family:'IBM Plex Mono', monospace; font-weight:600; text-align:right; }
+.check-ok{ color:var(--verde-lucro); }
+.check-falha{ color:var(--vermelho-prejuizo); }
+.check-neutro{ color:var(--ambar-alerta); }
+.carimbo-dia{ display:flex; align-items:center; gap:16px; padding:16px 18px; border-bottom:1px solid var(--linha); }
+.carimbo-circulo{
+  font-family:'IBM Plex Mono', monospace; font-size:10px; font-weight:600; letter-spacing:0.05em;
+  color:var(--vermelho-prejuizo); border:2.5px solid var(--vermelho-prejuizo); border-radius:50%;
+  min-width:72px; height:72px; display:flex; align-items:center; justify-content:center; text-align:center;
+  transform:rotate(-10deg); opacity:0.85; line-height:1.25; padding:6px; flex-shrink:0;
+}
+.carimbo-texto{ font-size:13.5px; color:var(--tinta-suave); line-height:1.55; }
+.carimbo-texto strong{ color:var(--tinta); font-family:'Fraunces', serif; font-size:16px; display:block; margin-bottom:3px; }
+
+.vazio-cartao{ border:2px dashed var(--linha-forte); padding:34px 26px; text-align:center; background:rgba(255,255,255,0.35);
+  font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); margin-bottom:30px; }
+
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+
+footer{ max-width:680px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <nav class="abas" id="nav-diario" style="display:none;">
+    <a class="aba" href="diario_trade.html">Diário de Hoje</a>
+    <a class="aba ativa">Análise Dia a Dia</a>
+    <a class="aba" href="analise_performance.html">Análise de Performance</a>
+    <a class="aba" href="diario_trade.html">Editar Perfil</a>
+  </nav>
+
+  <main id="conteudo" style="display:none;">
+
+    <div class="form-intro">
+      <div class="secao-header"><h2>Análise Dia a Dia</h2><span class="n-amostra" id="n-completos">—</span></div>
+      <p>Só aparecem selecionáveis os dias com diário completo <em>e</em> CSV carregado —
+      os únicos em que o cruzamento entre plano e realidade é possível.</p>
+    </div>
+
+    <div class="cal-nav">
+      <button id="btn-mes-ant" onclick="mudarMes(-1)">←</button>
+      <strong id="cal-titulo">—</strong>
+      <button id="btn-mes-seg" onclick="mudarMes(1)">→</button>
+    </div>
+    <div class="calendario" id="calendario"></div>
+    <div class="cal-legenda">
+      <span class="leg-chip" style="background:var(--verde-lucro-fundo); border-color:var(--verde-lucro);"></span> plano respeitado ·
+      <span class="leg-chip" style="background:var(--vermelho-prejuizo-fundo); border-color:var(--vermelho-prejuizo);"></span> plano violado ·
+      ponto: sinal do resultado (R$) · demais dias sem dados completos
+    </div>
+
+    <div class="vazio-cartao" id="vazio-cartao">Nenhum dia selecionado.</div>
+    <div class="cartao-analise" id="cartao" style="display:none;">
+      <div class="cartao-analise-titulo">
+        <span id="cartao-data">—</span>
+        <span>diário ✓ · CSV ✓</span>
+      </div>
+      <div class="carimbo-dia">
+        <div class="carimbo-circulo" id="carimbo-circulo">—</div>
+        <div class="carimbo-texto">
+          <strong id="carimbo-titulo">—</strong>
+          <span id="carimbo-sub">—</span>
+        </div>
+      </div>
+      <div class="linha-item">
+        <span class="rot">Resultado do dia (CSV)</span>
+        <span class="val" id="val-resultado">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot" id="rot-perda">Perda máx.</span>
+        <span class="val" id="val-perda">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot" id="rot-contratos">Contratos</span>
+        <span class="val" id="val-contratos">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot" id="rot-meta">Meta de ganho</span>
+        <span class="val" id="val-meta">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot">Ansiedade declarada de manhã</span>
+        <span class="val" id="val-ansiedade">—</span>
+      </div>
+      <div class="linha-item">
+        <span class="rot">Teria feito diferente</span>
+        <span class="val" id="val-obs" style="font-family:'IBM Plex Sans',sans-serif; font-weight:400; font-size:13.5px; max-width:55%;">—</span>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="carregando" id="carregando">Carregando análise...</div>
+
+  <footer>O dia só entra na análise quando plano, fechamento e CSV existem juntos</footer>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  /* ===================== Constantes ===================== */
+
+  const NOMES_ARQ = {
+    estrategista: 'O Estrategista', teimoso: 'O Teimoso', vingador: 'O Vingador',
+    apostador: 'O Apostador', medroso: 'O Medroso', euforico: 'O Eufórico'
+  };
+  const CARIMBO_ARQ = {
+    estrategista: 'O ESTRA-TEGISTA', teimoso: 'O TEIMOSO', vingador: 'O VINGADOR',
+    apostador: 'O APOSTADOR', medroso: 'O MEDROSO', euforico: 'O EUFÓRICO'
+  };
+  const ANSIEDADE_LABEL = { 1: 'Nenhuma', 2: 'Leve', 3: 'Moderada', 4: 'Alta', 5: 'Extrema' };
+  const SATISFACAO_LABEL = {
+    satisfeito: 'Satisfeito com a forma de operar',
+    neutro: 'Neutro sobre a forma de operar',
+    insatisfeito: 'Insatisfeito com a forma de operar'
+  };
+  const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+  /* ===================== Estado ===================== */
+
+  let sessao = null;
+  let tradesPorDia = {};       // 'YYYY-MM-DD' → [trades]
+  let mesAtual = null;         // 'YYYY-MM'
+  const cacheMeses = {};       // 'YYYY-MM' → dias[] do endpoint
+  let diaSelecionado = null;
+
+  /* ===================== Helpers ===================== */
+
+  // Chave de dia LOCAL (não usar toISOString: desloca o dia pelo fuso)
+  function chaveDiaLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function mesLocalAtual() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function tituloMes(mes) {
+    const [ano, m] = mes.split('-').map(Number);
+    const nome = MESES[m - 1];
+    return nome.charAt(0).toUpperCase() + nome.slice(1) + ' ' + ano;
+  }
+
+  /* ===================== Verificação plano × CSV ===================== */
+
+  // Um dia "respeita o plano" se o CSV não rompe nenhum dos dois limites verificáveis:
+  // perda máxima (mínimo do acumulado intradia, na ordem de entrada) e máximo de contratos.
+  function verificarDia(tradesDia, perdaMax, contratosMax) {
+    const ordenados = ordenarPorFecha(tradesDia);
+    let acum = 0, minAcum = 0, maxContratos = 0, resultado = 0;
+    ordenados.forEach(t => {
+      const r = Number(t['Resultado_R$']) || 0;
+      acum += r;
+      resultado += r;
+      if (acum < minAcum) minAcum = acum;
+      const q = Number(t.Cantidad) || 0;
+      if (q > maxContratos) maxContratos = q;
+    });
+    return {
+      n: tradesDia.length,
+      resultado,
+      minAcum,
+      maxContratos,
+      perdaOk: (perdaMax === null || perdaMax === undefined) ? null : (minAcum >= -perdaMax),
+      contratosOk: (contratosMax === null || contratosMax === undefined) ? null : (maxContratos <= contratosMax)
+    };
+  }
+
+  /* ===================== Carga inicial ===================== */
+
+  async function carregar() {
+    sessao = iniciarPagina({ paginaAtiva: 'analise_diaadia.html', mostrarAbas: false, eyebrow: 'Análise Dia a Dia' });
+    if (!sessao) return;
+
+    try {
+      // Guardia: sem perfil, o módulo redireciona ao onboarding do diário
+      const respEstado = await fetch(APPSCRIPT_URL + '?action=diario_estado&token=' + encodeURIComponent(sessao.token) + '&fecha=' + chaveDiaLocal(new Date()));
+      const estado = await respEstado.json();
+      if (!estado.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + estado.error;
+        return;
+      }
+      if (!estado.perfil) {
+        window.location.href = 'diario_trade.html';
+        return;
+      }
+
+      // Todas as operações do usuário, agrupadas por dia local
+      const respTrades = await fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessao.token));
+      const dataTrades = await respTrades.json();
+      if (!dataTrades.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + dataTrades.error;
+        return;
+      }
+      tradesPorDia = {};
+      dataTrades.trades.forEach(t => {
+        const chave = chaveDiaLocal(dataDoTrade(t));
+        if (!tradesPorDia[chave]) tradesPorDia[chave] = [];
+        tradesPorDia[chave].push(t);
+      });
+
+      document.getElementById('nav-diario').style.display = 'flex';
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+
+      mesAtual = mesLocalAtual();
+      await renderMes(true);
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao carregar a análise.';
+    }
+  }
+
+  /* ===================== Calendário ===================== */
+
+  async function buscarDiasMes(mes) {
+    if (cacheMeses[mes]) return cacheMeses[mes];
+    const resp = await fetch(APPSCRIPT_URL + '?action=diario_dias&token=' + encodeURIComponent(sessao.token) + '&mes=' + mes);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    cacheMeses[mes] = data.dias;
+    return data.dias;
+  }
+
+  async function mudarMes(delta) {
+    const [ano, m] = mesAtual.split('-').map(Number);
+    const d = new Date(ano, m - 1 + delta, 1);
+    mesAtual = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    diaSelecionado = null;
+    await renderMes(true);
+  }
+
+  async function renderMes(autoSelecionar) {
+    document.getElementById('cal-titulo').textContent = tituloMes(mesAtual);
+    document.getElementById('btn-mes-seg').disabled = (mesAtual >= mesLocalAtual());
+
+    let dias = [];
+    try {
+      dias = await buscarDiasMes(mesAtual);
+    } catch (err) {
+      document.getElementById('n-completos').textContent = 'erro ao carregar o mês';
+      document.getElementById('calendario').innerHTML = '';
+      return;
+    }
+
+    const porFecha = {};
+    dias.forEach(d => { porFecha[d.fecha] = d; });
+
+    const [ano, m] = mesAtual.split('-').map(Number);
+    const primeiroDia = new Date(ano, m - 1, 1);
+    const diasNoMes = new Date(ano, m, 0).getDate();
+    // Segunda=0 ... Domingo=6
+    const offset = primeiroDia.getDay() === 0 ? 6 : primeiroDia.getDay() - 1;
+
+    let html = '<div class="cal-dow">Seg</div><div class="cal-dow">Ter</div><div class="cal-dow">Qua</div><div class="cal-dow">Qui</div><div class="cal-dow">Sex</div><div class="cal-dow">Sáb</div><div class="cal-dow">Dom</div>';
+    for (let i = 0; i < offset; i++) html += '<div class="cal-dia"></div>';
+
+    const clicaveis = [];
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      const fecha = mesAtual + '-' + String(dia).padStart(2, '0');
+      const info = porFecha[fecha];
+      const analisavel = !!(info && info.completo && info.tem_trades && tradesPorDia[fecha]);
+
+      if (!analisavel) {
+        html += '<div class="cal-dia">' + dia + '</div>';
+        continue;
+      }
+
+      clicaveis.push(fecha);
+      const v = verificarDia(tradesPorDia[fecha], info.perda_max, info.contratos_max);
+      const respeitado = (v.perdaOk !== false) && (v.contratosOk !== false);
+      let cls = 'cal-dia com-dados ' + (respeitado ? 'dia-ok' : 'dia-violado');
+      if (fecha === diaSelecionado) cls += ' selecionado';
+      const ponto = '<span class="ponto ' + (v.resultado >= 0 ? 'pos' : 'neg') + '"></span>';
+      html += '<div class="' + cls + '" data-fecha="' + fecha + '" onclick="selecionarDia(\'' + fecha + '\')">' + dia + ponto + '</div>';
+    }
+    document.getElementById('calendario').innerHTML = html;
+    document.getElementById('n-completos').textContent = clicaveis.length + (clicaveis.length === 1 ? ' dia completo em ' : ' dias completos em ') + MESES[m - 1];
+
+    if (clicaveis.length === 0) {
+      document.getElementById('cartao').style.display = 'none';
+      document.getElementById('vazio-cartao').style.display = 'block';
+      document.getElementById('vazio-cartao').textContent = 'Nenhum dia com diário completo e CSV neste mês.';
+    } else if (autoSelecionar && !diaSelecionado) {
+      selecionarDia(clicaveis[clicaveis.length - 1]);
+    }
+  }
+
+  /* ===================== Cartão do dia ===================== */
+
+  async function selecionarDia(fecha) {
+    diaSelecionado = fecha;
+    document.querySelectorAll('.cal-dia').forEach(el => {
+      el.classList.toggle('selecionado', el.getAttribute('data-fecha') === fecha);
+    });
+
+    let registro = null;
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=diario_estado&token=' + encodeURIComponent(sessao.token) + '&fecha=' + fecha);
+      const data = await resp.json();
+      if (!data.ok || !data.registro) throw new Error(data.error || 'Registro não encontrado.');
+      registro = data.registro;
+    } catch (err) {
+      document.getElementById('cartao').style.display = 'none';
+      document.getElementById('vazio-cartao').style.display = 'block';
+      document.getElementById('vazio-cartao').textContent = 'Não foi possível carregar o registro deste dia.';
+      return;
+    }
+
+    const tradesDia = tradesPorDia[fecha] || [];
+    const perdaMax = Number(registro.Perda_Max) || null;
+    const contratosMax = Number(registro.Contratos_Max) || null;
+    const metaDia = Number(registro.Meta_Dia) || null;
+    const v = verificarDia(tradesDia, perdaMax, contratosMax);
+
+    // Cabeçalho: "Quinta, 16/07/2026"
+    const [ano, m, dia] = fecha.split('-').map(Number);
+    const d = new Date(ano, m - 1, dia);
+    let diaSemana = d.toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0];
+    diaSemana = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+    document.getElementById('cartao-data').innerHTML = diaSemana + ', <strong>' + d.toLocaleDateString('pt-BR') + '</strong>';
+
+    // Carimbo
+    const arq = registro.Arquetipo || '';
+    document.getElementById('carimbo-circulo').textContent = CARIMBO_ARQ[arq] || '—';
+    document.getElementById('carimbo-titulo').textContent = 'Você declarou: ' + (NOMES_ARQ[arq] || '—');
+    const partes = [];
+    if (SATISFACAO_LABEL[registro.Satisfacao]) partes.push(SATISFACAO_LABEL[registro.Satisfacao]);
+    partes.push(registro.Riscos_Desnec === 'Sim' ? 'Correu riscos desnecessários (declarado)' : 'Sem riscos desnecessários (declarado)');
+    document.getElementById('carimbo-sub').textContent = partes.join(' · ');
+
+    // Resultado do dia
+    const elRes = document.getElementById('val-resultado');
+    elRes.textContent = (v.resultado >= 0 ? '+ ' : '− ') + formatarReais(Math.abs(v.resultado)) + ' · ' + v.n + (v.n === 1 ? ' operação' : ' operações');
+    elRes.style.color = v.resultado >= 0 ? 'var(--verde-lucro)' : 'var(--vermelho-prejuizo)';
+
+    // Perda máxima: declaração × CSV
+    const declPerda = registro.Resp_PerdaMax; // 'Sim' | 'Não'
+    document.getElementById('rot-perda').textContent =
+      'Perda máx.: declarou − ' + formatarReais(perdaMax || 0).replace('R$ ', 'R$ ') + ' e "' + (declPerda === 'Sim' ? 'respeitei' : 'não respeitei') + '"';
+    const elPerda = document.getElementById('val-perda');
+    if (v.perdaOk === true && declPerda === 'Sim') { elPerda.textContent = 'CSV confirma ✓'; elPerda.className = 'val check-ok'; }
+    else if (v.perdaOk === false && declPerda === 'Não') { elPerda.textContent = 'confirmado: mín. ' + formatarReais(v.minAcum) + ' ✗'; elPerda.className = 'val check-falha'; }
+    else if (v.perdaOk === false && declPerda === 'Sim') { elPerda.textContent = 'CSV contradiz: mín. ' + formatarReais(v.minAcum) + ' ✗'; elPerda.className = 'val check-falha'; }
+    else { elPerda.textContent = 'CSV diverge: limite não rompido'; elPerda.className = 'val check-neutro'; }
+
+    // Contratos: declaração × CSV
+    const declContr = registro.Resp_Contratos;
+    document.getElementById('rot-contratos').textContent =
+      'Contratos: declarou máx. ' + (contratosMax || '—') + ' e "' + (declContr === 'Sim' ? 'respeitei' : 'não respeitei') + '"';
+    const elContr = document.getElementById('val-contratos');
+    if (v.contratosOk === true && declContr === 'Sim') { elContr.textContent = 'máx. real ' + v.maxContratos + ' ✓'; elContr.className = 'val check-ok'; }
+    else if (v.contratosOk === false && declContr === 'Não') { elContr.textContent = 'confirmado: máx. real ' + v.maxContratos + ' ✗'; elContr.className = 'val check-falha'; }
+    else if (v.contratosOk === false && declContr === 'Sim') { elContr.textContent = 'CSV contradiz: máx. real ' + v.maxContratos + ' ✗'; elContr.className = 'val check-falha'; }
+    else { elContr.textContent = 'CSV diverge: máx. real ' + v.maxContratos; elContr.className = 'val check-neutro'; }
+
+    // Meta de ganho
+    document.getElementById('rot-meta').textContent = 'Meta de ganho: + ' + formatarReais(metaDia || 0);
+    const elMeta = document.getElementById('val-meta');
+    if (!metaDia) { elMeta.textContent = '—'; elMeta.className = 'val'; }
+    else if (v.resultado <= 0) { elMeta.textContent = 'dia negativo'; elMeta.className = 'val check-falha'; }
+    else if (v.resultado >= metaDia) { elMeta.textContent = 'atingida (' + Math.round((v.resultado / metaDia) * 100) + '%) ✓'; elMeta.className = 'val check-ok'; }
+    else { elMeta.textContent = 'atingiu ' + Math.round((v.resultado / metaDia) * 100) + '%'; elMeta.className = 'val check-neutro'; }
+
+    // Ansiedade
+    const ans = Number(registro.Ansiedade) || null;
+    document.getElementById('val-ansiedade').textContent = ans ? (ans + ' · ' + ANSIEDADE_LABEL[ans]) : '—';
+
+    // Obs pós
+    document.getElementById('val-obs').textContent = registro.Obs_Pos ? '"' + registro.Obs_Pos + '"' : '—';
+
+    document.getElementById('vazio-cartao').style.display = 'none';
+    document.getElementById('cartao').style.display = 'block';
+  }
+
+  carregar();
+</script>
+</body>
+</html>
