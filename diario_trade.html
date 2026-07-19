@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Diário de Trade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8;
+  --papel-escuro:#E1D9C4;
+  --tinta:#22281F;
+  --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F;
+  --verde-lucro-fundo:#DEE8DF;
+  --vermelho-prejuizo:#A13D2E;
+  --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E;
+  --ambar-alerta-fundo:#EFE3C8;
+  --linha:#C9C1A9;
+  --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:16px;
+  background:var(--papel);
+  color:var(--tinta);
+  min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px);
+}
+a{ color:inherit; }
+.num{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
+
+.membrete{ display:flex; justify-content:space-between; align-items:flex-end; padding:22px 32px 16px; border-bottom:3px double var(--linha-forte); flex-wrap:wrap; gap:10px; }
+.membrete-marca{ font-family:'Fraunces', serif; font-weight:700; font-size:25px; text-decoration:none; color:var(--tinta); }
+.membrete-eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:4px; }
+.membrete-meta{ text-align:right; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--tinta-suave); line-height:1.7; }
+.membrete-meta strong{ color:var(--tinta); }
+
+/* nav do módulo diário (só aparece com perfil completo) */
+.abas{ display:flex; gap:2px; padding:0 28px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); overflow-x:auto; }
+.aba{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); text-decoration:none; padding:12px 18px 10px; white-space:nowrap; cursor:pointer; }
+.aba:hover{ color:var(--tinta); }
+.aba.ativa{ background:var(--papel); color:var(--tinta); font-weight:600; border:1px solid var(--linha-forte); border-bottom:none; border-top:2px solid var(--verde-lucro); margin-top:-1px; }
+
+main{ max-width:680px; margin:0 auto; padding:38px 28px 80px; }
+
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .n-amostra{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--tinta-suave); }
+
+.form-intro p{ font-size:14.5px; color:var(--tinta-suave); line-height:1.6; margin-top:7px; }
+.form-intro{ margin-bottom:30px; }
+
+.campo{ margin-bottom:32px; }
+.campo-rotulo{ font-family:'Fraunces', serif; font-size:17.5px; font-weight:600; margin-bottom:5px; }
+.campo-ajuda{ font-size:13.5px; color:var(--tinta-suave); margin-bottom:14px; line-height:1.55; }
+
+select.entrada, input.entrada, textarea{
+  width:100%; font-family:'IBM Plex Mono', monospace; font-size:15px;
+  padding:12px 13px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta);
+}
+select.entrada:focus, input.entrada:focus, textarea:focus{ outline:none; border-color:var(--verde-lucro); }
+textarea{ font-family:'IBM Plex Sans', sans-serif; font-size:14.5px; min-height:100px; resize:vertical; }
+
+.entrada-reais{ display:flex; align-items:stretch; border:1px solid var(--linha-forte); }
+.entrada-reais span{ font-family:'IBM Plex Mono', monospace; font-size:14px; color:var(--tinta-suave); display:flex; align-items:center; padding:0 12px; border-right:1px solid var(--linha); background:var(--papel-escuro); }
+.entrada-reais input{ border:none; flex:1; font-family:'IBM Plex Mono', monospace; font-size:16px; padding:12px 13px; background:var(--papel); color:var(--tinta); width:100%; }
+.entrada-reais input:focus{ outline:none; }
+.entrada-reais:focus-within{ border-color:var(--verde-lucro); }
+
+.escala{ display:flex; gap:0; border:1px solid var(--linha-forte); }
+.escala label{ flex:1; text-align:center; padding:14px 6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; border-right:1px solid var(--linha); cursor:pointer; color:var(--tinta-suave); }
+.escala label:last-child{ border-right:none; }
+.escala label .n{ display:block; font-size:18px; font-weight:600; margin-bottom:5px; color:var(--tinta); }
+.escala input{ display:none; }
+.escala input:checked + label{ background:var(--tinta); color:var(--papel); }
+.escala input:checked + label .n{ color:var(--papel); }
+
+/* checklist do pós */
+.check-linha{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--linha); }
+.check-linha:last-child{ border-bottom:none; }
+.check-rotulo{ font-size:14.5px; line-height:1.45; }
+.check-opcoes{ display:flex; border:1px solid var(--linha-forte); flex-shrink:0; }
+.check-opcoes label{ font-family:'IBM Plex Mono', monospace; font-size:12px; padding:8px 16px; cursor:pointer; color:var(--tinta-suave); border-right:1px solid var(--linha); }
+.check-opcoes label:last-child{ border-right:none; }
+.check-opcoes input{ display:none; }
+.check-opcoes input:checked + label{ background:var(--tinta); color:var(--papel); font-weight:600; }
+
+.passos{ display:flex; gap:8px; align-items:center; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); margin-bottom:26px; }
+.passo-pill{ border:1px solid var(--linha-forte); padding:5px 12px; letter-spacing:0.05em; text-transform:uppercase; }
+.passo-pill.ativo{ background:var(--tinta); color:var(--papel); border-color:var(--tinta); font-weight:600; }
+.passo-pill.feito{ color:var(--verde-lucro); border-color:var(--verde-lucro); }
+
+.arquetipos{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:560px){ .arquetipos{ grid-template-columns:1fr; } }
+.arquetipo{
+  border:1px solid var(--linha-forte); background:rgba(255,255,255,0.35);
+  padding:16px 16px 14px; cursor:pointer; position:relative; transition:background 0.12s;
+}
+.arquetipo:hover{ background:var(--papel-escuro); }
+.arquetipo .arq-nome{ font-family:'Fraunces', serif; font-weight:600; font-size:16.5px; margin:9px 0 5px; }
+.arquetipo .arq-desc{ font-size:13px; color:var(--tinta-suave); line-height:1.5; }
+.arquetipo svg{ display:block; }
+.arquetipo.selecionado{ background:var(--papel); border-color:var(--tinta); }
+.arquetipo.selecionado::after{
+  content:'HOJE'; position:absolute; top:10px; right:10px;
+  font-family:'IBM Plex Mono', monospace; font-size:10px; font-weight:600; letter-spacing:0.14em;
+  color:var(--vermelho-prejuizo); border:2px solid var(--vermelho-prejuizo); border-radius:50%;
+  width:46px; height:46px; display:flex; align-items:center; justify-content:center;
+  transform:rotate(-12deg); opacity:0.85;
+}
+.arquetipo.marcado-principal::after,
+.arquetipo.marcado-secundaria::after{
+  position:absolute; top:10px; right:10px;
+  font-family:'IBM Plex Mono', monospace; font-size:9.5px; font-weight:600; letter-spacing:0.1em;
+  border-radius:50%; width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+  text-align:center; transform:rotate(-12deg); opacity:0.85; line-height:1.2;
+}
+.arquetipo.marcado-principal{ background:var(--papel); border-color:var(--tinta); cursor:default; }
+.arquetipo.marcado-principal::after{ content:'PRIN- CIPAL'; color:var(--vermelho-prejuizo); border:2px solid var(--vermelho-prejuizo); }
+.arquetipo.marcado-secundaria{ background:var(--papel); border-color:var(--tinta); cursor:default; }
+.arquetipo.marcado-secundaria::after{ content:'2ª'; color:var(--ambar-alerta); border:2px solid var(--ambar-alerta); font-size:13px; }
+.arquetipo.desabilitado{ opacity:0.35; pointer-events:none; }
+
+.btn-secundario{
+  font-family:'IBM Plex Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;
+  background:none; border:1px solid var(--linha-forte); padding:10px 16px; cursor:pointer; color:var(--tinta-suave);
+}
+.btn-secundario:hover{ color:var(--tinta); border-color:var(--tinta); }
+.btn-salvar{
+  font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:14px; letter-spacing:0.04em;
+  text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:15px 32px; cursor:pointer;
+}
+.btn-salvar:hover{ background:var(--verde-lucro); }
+.btn-salvar:disabled{ opacity:0.45; cursor:default; }
+.btn-salvar:disabled:hover{ background:var(--tinta); }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:14px 18px; font-size:13.5px; line-height:1.6; margin:0 0 26px; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; color:var(--tinta); }
+
+/* home CTA */
+.cta-hoje{ border:2px dashed var(--linha-forte); padding:34px 26px; text-align:center; background:rgba(255,255,255,0.35); }
+.cta-hoje h3{ font-family:'Fraunces', serif; font-size:20px; font-weight:600; margin-bottom:10px; }
+.cta-hoje p{ font-size:13.5px; color:var(--tinta-suave); margin-bottom:20px; }
+.cta-status{ display:inline-flex; gap:14px; margin-bottom:18px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; flex-wrap:wrap; justify-content:center; }
+.cta-status span{ padding:4px 12px; border-radius:100px; }
+.cta-status .feito{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.cta-status .pendente{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+
+/* onboarding */
+.boas-vindas{ text-align:center; padding:30px 10px; }
+.boas-vindas h1{ font-family:'Fraunces', serif; font-size:30px; font-weight:700; margin-bottom:14px; }
+.boas-vindas p{ font-size:15px; color:var(--tinta-suave); line-height:1.65; max-width:520px; margin:0 auto 16px; }
+
+.msg-topo{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; margin-bottom:20px; display:none; }
+.msg-topo.sucesso{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.msg-topo.erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.msg-topo.aviso{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+
+footer{ max-width:680px; margin:0 auto; padding:0 28px 48px; font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); text-align:center; }
+
+.estado{ display:none; }
+.estado.visivel{ display:block; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <!-- nav do módulo: só se renderiza com perfil completo -->
+  <nav class="abas" id="nav-diario" style="display:none;">
+    <a class="aba ativa" id="aba-hoje" onclick="voltarHome(); return false;">Diário de Hoje</a>
+    <a class="aba" href="analise_diaadia.html">Análise Dia a Dia</a>
+    <a class="aba" href="analise_performance.html">Análise de Performance</a>
+    <a class="aba" onclick="abrirEditarPerfil(); return false;">Editar Perfil</a>
+  </nav>
+
+  <main id="conteudo" style="display:none;">
+
+  <div class="msg-topo" id="msg-topo"></div>
+
+  <!-- ============ 1ª VISITA (sem perfil) ============ -->
+  <div class="estado" id="estado-boasvindas">
+    <div class="boas-vindas">
+      <h1>Diário de Trade</h1>
+      <p>Todo dia, duas visitas curtas: <strong>antes do pregão</strong> você declara o plano
+      — perda máxima, contratos, meta — e <strong>depois do pregão</strong> declara o que
+      realmente aconteceu.</p>
+      <p>O CSV que você já carrega faz o resto: confere o plano contra a realidade,
+      dia após dia. Com o tempo, as análises mostram quem opera nos seus dias —
+      e quanto cada comportamento custa.</p>
+      <p>Para começar, precisamos do seu perfil. São duas etapas, respondidas
+      uma única vez: <strong>seus dados</strong> e <strong>os 6 personagens do day trade</strong>.</p>
+      <div style="margin-top:28px;">
+        <button class="btn-salvar" onclick="mostrar('perfil1')">Começar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PERFIL PASSO 1 ============ -->
+  <div class="estado" id="estado-perfil1">
+    <div class="passos">
+      <span class="passo-pill ativo">1 · Seus dados</span><span>→</span><span class="passo-pill">2 · Os personagens</span>
+    </div>
+    <div class="form-intro">
+      <div class="secao-header"><h2>Seus dados</h2><span class="n-amostra">etapa 1 de 2</span></div>
+      <p>Três respostas rápidas. Elas dão escala a tudo o que o diário vai medir.</p>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Há quanto tempo você opera day trade?</div>
+      <select class="entrada" id="perfil-experiencia">
+        <option value="menos_1">Menos de 1 ano</option>
+        <option value="1_3">1 a 3 anos</option>
+        <option value="3_5">3 a 5 anos</option>
+        <option value="mais_5">Mais de 5 anos</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Capital destinado à operação</div>
+      <div class="campo-ajuda">Faixa aproximada — usada só para expressar seus limites como % do capital. Ninguém além de você vê este dado.</div>
+      <select class="entrada" id="perfil-capital">
+        <option value="ate_10k">Até R$ 10.000</option>
+        <option value="10k_50k">R$ 10.000 a R$ 50.000</option>
+        <option value="50k_100k">R$ 50.000 a R$ 100.000</option>
+        <option value="acima_100k">Acima de R$ 100.000</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Meta mensal realista</div>
+      <div class="campo-ajuda">Quanto você espera ganhar por mês, em média, operando bem. Declare o número verdadeiro — as simulações futuras usam este valor.</div>
+      <div class="entrada-reais"><span>R$</span><input type="text" inputmode="numeric" placeholder="0,00" id="perfil-meta"></div>
+    </div>
+
+    <button type="button" class="btn-salvar" onclick="finalizarPasso1()">Finalizar passo 1 →</button>
+  </div>
+
+  <!-- ============ PERFIL PASSO 2 ============ -->
+  <div class="estado" id="estado-perfil2">
+    <div class="passos">
+      <span class="passo-pill feito">1 · Seus dados ✓</span><span>→</span><span class="passo-pill ativo">2 · Os personagens</span>
+    </div>
+    <div class="form-intro">
+      <div class="secao-header"><h2>Os 6 personagens do day trade</h2><span class="n-amostra">etapa 2 de 2</span></div>
+      <p>Todo trader tem dias de cada um deles — ninguém é um personagem só.
+      Aqui você declara qual acredita ser o seu <strong>ponto fraco principal</strong>:
+      o personagem que mais aparece quando você sai do plano.</p>
+      <p style="margin-top:10px;"><strong>Como funciona:</strong> toque no personagem da sua
+      fraqueza principal. Depois, se enxergar uma segunda, marque também — ou pule,
+      se só uma fala mais alto. Em ~90 dias de diário, o sistema compara esta resposta
+      com quem <em>realmente</em> operou nos seus dias. Não existe resposta certa — só honesta.</p>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo" id="fraq-pergunta">Qual é sua fraqueza principal?</div>
+      <div class="campo-ajuda" id="fraq-ajuda">Toque em um personagem para marcá-lo como principal.</div>
+      <div class="arquetipos" id="grid-fraquezas"></div>
+      <div style="margin-top:14px; display:none;" id="fraq-acoes">
+        <button class="btn-secundario" onclick="pularSecundaria()">Não vejo uma segunda</button>
+        <button class="btn-secundario" onclick="resetFraquezas()" style="margin-left:8px;">Refazer escolha</button>
+      </div>
+      <div style="margin-top:14px; display:none;" id="fraq-refazer">
+        <button class="btn-secundario" onclick="resetFraquezas()">Refazer escolha</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn-salvar" id="btn-salvar-perfil" disabled onclick="salvarPerfil(this)">Finalizar</button>
+    <div class="campo-ajuda" style="margin-top:10px;" id="ajuda-salvar">O botão libera após escolher a fraqueza principal.</div>
+  </div>
+
+  <!-- ============ HOME (perfil completo) ============ -->
+  <div class="estado" id="estado-home">
+
+    <div class="cta-hoje" id="home-cta-pre" style="display:none;">
+      <h3 id="titulo-cta-pre">Diário de hoje</h3>
+      <div class="cta-status">
+        <span class="pendente">Pré-mercado: pendente</span>
+        <span class="pendente">Pós-mercado: pendente</span>
+      </div>
+      <p>Declare o plano antes do pregão. À noite, volte para fechar o dia.</p>
+      <button class="btn-salvar" onclick="abrirPre()">Preencher pré-mercado</button>
+      <div style="margin-top:16px;">
+        <button class="btn-secundario" onclick="abrirPos()">O pregão já terminou? Preencher só o pós</button>
+      </div>
+    </div>
+
+    <div class="cta-hoje" id="home-cta-pos" style="display:none;">
+      <h3 id="titulo-cta-pos">Diário de hoje</h3>
+      <div class="cta-status">
+        <span class="feito" id="status-pre-salvo">Pré-mercado: salvo</span>
+        <span class="pendente">Pós-mercado: pendente</span>
+      </div>
+      <p>O pregão terminou? Feche o dia com o pós-mercado.</p>
+      <button class="btn-salvar" onclick="abrirPos()">Preencher pós-mercado</button>
+    </div>
+
+    <div class="cta-hoje" id="home-cta-completo" style="display:none;">
+      <h3 id="titulo-cta-completo">Diário de hoje</h3>
+      <div class="cta-status">
+        <span class="feito" id="status-pre-completo">Pré-mercado: salvo</span>
+        <span class="feito" id="status-pos-completo">Pós-mercado: salvo</span>
+      </div>
+      <p>Dia registrado. O diário reabre amanhã no pré-mercado.</p>
+      <button class="btn-secundario" onclick="abrirPos()">Editar registros de hoje</button>
+    </div>
+
+  </div>
+
+  <!-- ============ PRÉ-MERCADO ============ -->
+  <div class="estado" id="estado-pre">
+    <div class="form-intro">
+      <div class="secao-header"><h2>Pré-mercado</h2><span class="n-amostra" id="data-pre"></span></div>
+      <p>Declare o plano de hoje antes do pregão. À noite, o pós-mercado pergunta
+      o que aconteceu — e o CSV confere o resto.</p>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Perda máxima de hoje</div>
+      <div class="campo-ajuda">Se o dia chegar nesse número, a operação para.</div>
+      <div class="entrada-reais"><span>− R$</span><input type="text" inputmode="numeric" placeholder="0,00" id="pre-perda"></div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Máximo de contratos por operação</div>
+      <div class="entrada-reais"><span>WIN</span><input type="text" inputmode="numeric" placeholder="0" id="pre-contratos"></div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Meta de ganho de hoje</div>
+      <div class="campo-ajuda">Declare o número que, atingido, faz você considerar parar — não o número dos sonhos.</div>
+      <div class="entrada-reais"><span>+ R$</span><input type="text" inputmode="numeric" placeholder="0,00" id="pre-meta"></div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Como o resultado de ontem chega em você hoje?</div>
+      <div class="escala">
+        <input type="radio" name="ontem" id="on1" value="recuperar"><label for="on1">Quero recuperar</label>
+        <input type="radio" name="ontem" id="on2" value="neutro" checked><label for="on2">Neutro</label>
+        <input type="radio" name="ontem" id="on3" value="confiante"><label for="on3">Venho confiante</label>
+        <input type="radio" name="ontem" id="on4" value="cauteloso"><label for="on4">Venho cauteloso</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Nível de ansiedade agora</div>
+      <div class="escala">
+        <input type="radio" name="ansiedade" id="ax1" value="1"><label for="ax1"><span class="n">1</span>Nenhuma</label>
+        <input type="radio" name="ansiedade" id="ax2" value="2" checked><label for="ax2"><span class="n">2</span>Leve</label>
+        <input type="radio" name="ansiedade" id="ax3" value="3"><label for="ax3"><span class="n">3</span>Moderada</label>
+        <input type="radio" name="ansiedade" id="ax4" value="4"><label for="ax4"><span class="n">4</span>Alta</label>
+        <input type="radio" name="ansiedade" id="ax5" value="5"><label for="ax5"><span class="n">5</span>Extrema</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Observações</div>
+      <div class="campo-ajuda">Opcional — contexto que ajude a reler o dia depois.</div>
+      <textarea placeholder="Ex.: dormi mal, feriado nos EUA, mercado deve andar pouco..." id="pre-obs"></textarea>
+    </div>
+
+    <button type="button" class="btn-salvar" onclick="salvarPre(this)">Salvar plano do dia</button>
+  </div>
+
+  <!-- ============ PÓS-MERCADO ============ -->
+  <div class="estado" id="estado-pos">
+    <div class="form-intro">
+      <div class="secao-header"><h2>Pós-mercado</h2><span class="n-amostra" id="data-pos"></span></div>
+      <p>O pregão terminou. Quatro perguntas sobre o que realmente aconteceu.</p>
+    </div>
+
+    <div class="nota-analista" id="aviso-sem-pre" style="display:none;">
+      <strong>Sem plano pré-mercado hoje</strong>
+      Você pode fechar o dia mesmo assim, mas as métricas de aderência não estarão
+      disponíveis para este dia — não há plano declarado para conferir contra o CSV.
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Quem operou hoje?</div>
+      <div class="campo-ajuda">Escolha o personagem que dominou a sua operação — não o que você queria que fosse.</div>
+      <div class="arquetipos" id="grid-arquetipos-pos"></div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">O plano da manhã, ponto por ponto</div>
+      <div class="check-linha">
+        <span class="check-rotulo">Respeitou a perda máxima do dia?</span>
+        <div class="check-opcoes">
+          <input type="radio" name="ck1" id="ck1s" value="Sim"><label for="ck1s">Sim</label>
+          <input type="radio" name="ck1" id="ck1n" value="Não"><label for="ck1n">Não</label>
+        </div>
+      </div>
+      <div class="check-linha">
+        <span class="check-rotulo">Respeitou o máximo de contratos?</span>
+        <div class="check-opcoes">
+          <input type="radio" name="ck2" id="ck2s" value="Sim"><label for="ck2s">Sim</label>
+          <input type="radio" name="ck2" id="ck2n" value="Não"><label for="ck2n">Não</label>
+        </div>
+      </div>
+      <div class="check-linha">
+        <span class="check-rotulo">Correu riscos desnecessários?</span>
+        <div class="check-opcoes">
+          <input type="radio" name="ck3" id="ck3s" value="Sim"><label for="ck3s">Sim</label>
+          <input type="radio" name="ck3" id="ck3n" value="Não"><label for="ck3n">Não</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">Você está satisfeito com a forma como operou hoje?</div>
+      <div class="campo-ajuda">Independente do resultado em reais — a pergunta é sobre como você operou, não sobre quanto fez.</div>
+      <div class="escala">
+        <input type="radio" name="satis" id="st1" value="insatisfeito"><label for="st1">Insatisfeito</label>
+        <input type="radio" name="satis" id="st2" value="neutro"><label for="st2">Neutro</label>
+        <input type="radio" name="satis" id="st3" value="satisfeito"><label for="st3">Satisfeito</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <div class="campo-rotulo">O que você teria feito diferente hoje?</div>
+      <div class="campo-ajuda">Opcional. "Nada" também é resposta — significa um dia operado como planejado.</div>
+      <textarea placeholder="Ex.: não teria voltado a operar depois do segundo stop..." id="pos-obs"></textarea>
+    </div>
+
+    <button type="button" class="btn-salvar" onclick="salvarPos(this)">Salvar fechamento do dia</button>
+  </div>
+
+  <!-- ============ PÓS SALVO (confirmação) ============ -->
+  <div class="estado" id="estado-salvo">
+    <div class="boas-vindas" style="padding-bottom:10px;">
+      <h1 style="font-size:24px;">Fechamento salvo</h1>
+      <p id="texto-salvo">O dia está registrado. Quando o CSV de hoje for carregado,
+      o sistema confere o plano contra as operações reais.</p>
+    </div>
+    <div class="nota-analista" id="aviso-salvo-sem-pre" style="display:none; max-width:520px; margin:0 auto 26px;">
+      <strong>Aviso</strong>
+      <span id="aviso-salvo-texto"></span>
+    </div>
+    <div class="cta-hoje" style="border-style:solid; border-width:1px;">
+      <p style="margin-bottom:16px;">Ainda não carregou o relatório do Profit de hoje?</p>
+      <button class="btn-salvar" onclick="window.location.href='upload.html'">Carregar CSV</button>
+      <div style="margin-top:16px;">
+        <button class="btn-secundario" onclick="window.location.href='analise_diaadia.html'">Ver Análise Dia a Dia</button>
+      </div>
+    </div>
+  </div>
+
+  </main>
+
+  <div class="carregando" id="carregando">Carregando diário...</div>
+
+  <footer>Registro qualitativo · o CSV é quem confere o plano contra a realidade</footer>
+
+<script src="nav.js"></script>
+<script>
+  /* ===================== Constantes ===================== */
+
+  const ARQUETIPOS = [
+    { id:'estrategista', nome:'O Estrategista',
+      descPerfil:'Sigo o plano: tamanho constante, entradas com critério, paro nos limites. Minha fraqueza é a convicção — às vezes falta firmeza para executar o que planejei.',
+      descPos:'Segui o plano: tamanho constante, parei nos limites',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+    { id:'teimoso', nome:'O Teimoso',
+      descPerfil:'Não aceito estar errado dentro da operação: alargo o stop, seguro a posição perdedora, faço preço médio esperando o mercado voltar.',
+      descPos:'Não aceitei o stop: alarguei, segurei a perdedora, fiz preço médio',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><path d="M12 4v10" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke-linecap="round"/><path d="M12 14v6" stroke-linecap="round" stroke-dasharray="2 2.5"/></svg>' },
+    { id:'vingador', nome:'O Vingador',
+      descPerfil:'Depois de fechar uma perda, entro de novo para recuperar o que o mercado me tirou. As operações seguintes viram revanche, não análise.',
+      descPos:'Depois de uma perda, operei para recuperar',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><path d="M4 17l5-6 4 3 7-9" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke-linecap="round"/></svg>' },
+    { id:'apostador', nome:'O Apostador',
+      descPerfil:'Aumento o tamanho buscando a operação que resolve o dia. O golpe grande me atrai mais do que a consistência de muitos ganhos pequenos.',
+      descPos:'Aumentei o tamanho buscando o golpe que resolvia o dia',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1" fill="#22281F"/><circle cx="15" cy="15" r="1" fill="#22281F"/><circle cx="15" cy="9" r="1" fill="#22281F"/><circle cx="9" cy="15" r="1" fill="#22281F"/></svg>' },
+    { id:'medroso', nome:'O Medroso',
+      descPerfil:'Fecho os ganhos cedo demais e hesito nas entradas boas. O medo de devolver o lucro corta justamente os meus melhores dias.',
+      descPos:'Fechei ganhos cedo demais, hesitei nas entradas',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><path d="M12 5c-5 0-8 5-8 7s3 7 8 7 8-5 8-7-3-7-8-7z"/><circle cx="12" cy="12" r="2.5"/></svg>' },
+    { id:'euforico', nome:'O Eufórico',
+      descPerfil:'Quando estou ganhando, me sinto invencível: acelero o ritmo, opero além da conta e devolvo o que tinha construído.',
+      descPos:'Estava ganhando, me senti invencível e operei demais',
+      icone:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22281F" stroke-width="1.6"><path d="M12 3l2.2 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.8-.6z" stroke-linejoin="round"/></svg>' }
+  ];
+
+  /* ===================== Estado global ===================== */
+
+  let sessao = null;
+  let perfilAtual = null;
+  let registroHoje = null;
+
+  /* ===================== Helpers ===================== */
+
+  function fechaLocalISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function rotuloHoje() {
+    // "sexta, 18/07"
+    const d = new Date();
+    const dia = d.toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0];
+    return dia + ', ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function rotuloHojeCompleto() {
+    // "sexta, 18/07/2026"
+    const d = new Date();
+    const dia = d.toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0];
+    return dia + ', ' + d.toLocaleDateString('pt-BR');
+  }
+
+  function horaDe(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // "4.000,50" / "4000,5" / "4000.5" → "4000.5" (formato canônico para o backend)
+  function normalizarNumeroBr(str) {
+    let s = String(str || '').trim().replace(/\s/g, '').replace(/^[+\-−]/, '');
+    if (s === '') return '';
+    if (s.indexOf(',') !== -1) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // sem vírgula: um ponto com exatamente 3 dígitos depois = separador de milhar ("4.000")
+      const m = s.match(/^\d{1,3}(\.\d{3})+$/);
+      if (m) s = s.replace(/\./g, '');
+    }
+    return s;
+  }
+
+  function formatarNumeroBr(n) {
+    if (n === null || n === undefined || n === '') return '';
+    const num = Number(n);
+    if (isNaN(num)) return '';
+    return num % 1 === 0 ? String(num) : String(num).replace('.', ',');
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('msg-topo');
+    el.textContent = texto;
+    el.className = 'msg-topo ' + tipo;
+    el.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  function mostrar(nome) {
+    document.querySelectorAll('.estado').forEach(e => e.classList.remove('visivel'));
+    document.getElementById('estado-' + nome).classList.add('visivel');
+    document.getElementById('nav-diario').style.display = perfilAtual ? 'flex' : 'none';
+    window.scrollTo(0, 0);
+  }
+
+  function radioMarcado(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+
+  function marcarRadio(name, valor) {
+    const el = document.querySelector('input[name="' + name + '"][value="' + valor + '"]');
+    if (el) el.checked = true;
+  }
+
+  /* ===================== Carga inicial ===================== */
+
+  async function carregar() {
+    sessao = iniciarPagina({ paginaAtiva: 'diario_trade.html', mostrarAbas: false, eyebrow: 'Diário de Trade' });
+    if (!sessao) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=diario_estado&token=' + encodeURIComponent(sessao.token) + '&fecha=' + fechaLocalISO());
+      const data = await resp.json();
+      if (!data.ok) {
+        document.getElementById('carregando').textContent = 'Erro: ' + data.error;
+        return;
+      }
+      perfilAtual = data.perfil;
+      registroHoje = data.registro;
+
+      document.getElementById('carregando').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+
+      renderFraquezas();
+      renderArquetiposPos();
+
+      if (!perfilAtual) {
+        mostrar('boasvindas');
+      } else {
+        renderHome();
+        mostrar('home');
+      }
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao carregar o diário.';
+    }
+  }
+
+  /* ===================== Home ===================== */
+
+  function renderHome() {
+    const temPre = !!(registroHoje && registroHoje.temPre);
+    const temPos = !!(registroHoje && registroHoje.temPos);
+    const titulo = 'Diário de hoje — ' + rotuloHoje();
+
+    document.getElementById('home-cta-pre').style.display = 'none';
+    document.getElementById('home-cta-pos').style.display = 'none';
+    document.getElementById('home-cta-completo').style.display = 'none';
+
+    if (temPre && temPos) {
+      document.getElementById('titulo-cta-completo').textContent = titulo;
+      document.getElementById('status-pre-completo').textContent = 'Pré-mercado: salvo' + (horaDe(registroHoje.Data_Pre) ? ' às ' + horaDe(registroHoje.Data_Pre) : '');
+      document.getElementById('status-pos-completo').textContent = 'Pós-mercado: salvo' + (horaDe(registroHoje.Data_Pos) ? ' às ' + horaDe(registroHoje.Data_Pos) : '');
+      document.getElementById('home-cta-completo').style.display = 'block';
+    } else if (temPre) {
+      document.getElementById('titulo-cta-pos').textContent = titulo;
+      document.getElementById('status-pre-salvo').textContent = 'Pré-mercado: salvo' + (horaDe(registroHoje.Data_Pre) ? ' às ' + horaDe(registroHoje.Data_Pre) : '');
+      document.getElementById('home-cta-pos').style.display = 'block';
+    } else {
+      document.getElementById('titulo-cta-pre').textContent = titulo;
+      document.getElementById('home-cta-pre').style.display = 'block';
+    }
+  }
+
+  function voltarHome() {
+    renderHome();
+    mostrar('home');
+  }
+
+  /* ===================== Perfil ===================== */
+
+  let passo1 = null;
+  let fraqPrincipal = null, fraqSecundaria = null;
+
+  function abrirEditarPerfil() {
+    // Pré-preenche com o perfil atual
+    if (perfilAtual) {
+      document.getElementById('perfil-experiencia').value = perfilAtual.Experiencia || 'menos_1';
+      document.getElementById('perfil-capital').value = perfilAtual.Capital_Faixa || 'ate_10k';
+      document.getElementById('perfil-meta').value = formatarNumeroBr(perfilAtual.Meta_Mensal);
+      fraqPrincipal = perfilAtual.Fraqueza_Principal || null;
+      fraqSecundaria = perfilAtual.Fraqueza_Secundaria === 'nenhuma' ? '__nenhuma__' : (perfilAtual.Fraqueza_Secundaria || null);
+      renderFraquezas();
+    }
+    mostrar('perfil1');
+  }
+
+  function finalizarPasso1() {
+    const meta = normalizarNumeroBr(document.getElementById('perfil-meta').value);
+    if (!meta || isNaN(parseFloat(meta)) || parseFloat(meta) <= 0) {
+      mostrarMensagem('Informe a meta mensal — um número maior que zero.', 'erro');
+      return;
+    }
+    passo1 = {
+      experiencia: document.getElementById('perfil-experiencia').value,
+      capital_faixa: document.getElementById('perfil-capital').value,
+      meta_mensal: meta
+    };
+    mostrar('perfil2');
+  }
+
+  function renderFraquezas() {
+    const grid = document.getElementById('grid-fraquezas');
+    grid.innerHTML = ARQUETIPOS.map(a => {
+      let cls = 'arquetipo';
+      if (a.id === fraqPrincipal) cls += ' marcado-principal';
+      else if (a.id === fraqSecundaria) cls += ' marcado-secundaria';
+      else if (fraqPrincipal && fraqSecundaria) cls += ' desabilitado';
+      return '<div class="' + cls + '" onclick="clicarFraqueza(\'' + a.id + '\')">' + a.icone +
+        '<div class="arq-nome">' + a.nome + '</div><div class="arq-desc">' + a.descPerfil + '</div></div>';
+    }).join('');
+    const pergunta = document.getElementById('fraq-pergunta');
+    const ajuda = document.getElementById('fraq-ajuda');
+    const acoes = document.getElementById('fraq-acoes');
+    const refazer = document.getElementById('fraq-refazer');
+    const btn = document.getElementById('btn-salvar-perfil');
+    const ajudaSalvar = document.getElementById('ajuda-salvar');
+    if (!fraqPrincipal) {
+      pergunta.textContent = 'Qual é sua fraqueza principal?';
+      ajuda.textContent = 'Toque em um personagem para marcá-lo como principal.';
+      acoes.style.display = 'none'; refazer.style.display = 'none';
+      btn.disabled = true; ajudaSalvar.style.display = 'block';
+    } else if (!fraqSecundaria) {
+      pergunta.textContent = 'E a segunda, se você enxergar outra?';
+      ajuda.textContent = 'Opcional. Se só uma fraqueza fala mais alto, pule esta etapa — não declarar também é um dado.';
+      acoes.style.display = 'block'; refazer.style.display = 'none';
+      btn.disabled = false; ajudaSalvar.style.display = 'none';
+    } else {
+      pergunta.textContent = 'Fraquezas declaradas';
+      ajuda.textContent = (fraqSecundaria === '__nenhuma__')
+        ? 'Segunda fraqueza: não declarada.'
+        : 'Em ~90 dias de diário, o sistema compara isto com quem realmente operou nos seus dias.';
+      acoes.style.display = 'none'; refazer.style.display = 'block';
+      btn.disabled = false; ajudaSalvar.style.display = 'none';
+    }
+  }
+
+  function clicarFraqueza(id) {
+    if (!fraqPrincipal) { fraqPrincipal = id; }
+    else if (!fraqSecundaria && id !== fraqPrincipal) { fraqSecundaria = id; }
+    renderFraquezas();
+  }
+
+  function pularSecundaria() {
+    fraqSecundaria = '__nenhuma__';
+    renderFraquezas();
+  }
+
+  function resetFraquezas() { fraqPrincipal = null; fraqSecundaria = null; renderFraquezas(); }
+
+  async function salvarPerfil(btn) {
+    if (!passo1) {
+      // Chegou direto ao passo 2 via "Editar Perfil" sem revalidar o passo 1
+      finalizarPasso1();
+      if (!passo1) { mostrar('perfil1'); return; }
+      mostrar('perfil2');
+    }
+    if (!fraqPrincipal) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_perfil',
+          token: sessao.token,
+          experiencia: passo1.experiencia,
+          capital_faixa: passo1.capital_faixa,
+          meta_mensal: passo1.meta_mensal,
+          fraqueza_principal: fraqPrincipal,
+          fraqueza_secundaria: (fraqSecundaria && fraqSecundaria !== '__nenhuma__') ? fraqSecundaria : 'nenhuma'
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        perfilAtual = {
+          Experiencia: passo1.experiencia,
+          Capital_Faixa: passo1.capital_faixa,
+          Meta_Mensal: parseFloat(passo1.meta_mensal),
+          Fraqueza_Principal: fraqPrincipal,
+          Fraqueza_Secundaria: (fraqSecundaria && fraqSecundaria !== '__nenhuma__') ? fraqSecundaria : 'nenhuma'
+        };
+        mostrarMensagem(data.atualizado ? 'Perfil atualizado.' : 'Perfil criado. Bem-vindo ao Diário de Trade.', 'sucesso');
+        renderHome();
+        mostrar('home');
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar o perfil.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão. Tente novamente.', 'erro');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Finalizar';
+  }
+
+  /* ===================== Pré-mercado ===================== */
+
+  function abrirPre() {
+    document.getElementById('data-pre').textContent = rotuloHojeCompleto();
+    // Pré-preenche se já existe um pré salvo hoje (edição)
+    if (registroHoje && registroHoje.temPre) {
+      document.getElementById('pre-perda').value = formatarNumeroBr(registroHoje.Perda_Max);
+      document.getElementById('pre-contratos').value = formatarNumeroBr(registroHoje.Contratos_Max);
+      document.getElementById('pre-meta').value = formatarNumeroBr(registroHoje.Meta_Dia);
+      marcarRadio('ontem', registroHoje.Efeito_Ontem);
+      marcarRadio('ansiedade', String(registroHoje.Ansiedade));
+      document.getElementById('pre-obs').value = registroHoje.Obs_Pre || '';
+    }
+    mostrar('pre');
+  }
+
+  async function salvarPre(btn) {
+    const perda = normalizarNumeroBr(document.getElementById('pre-perda').value);
+    const contratos = normalizarNumeroBr(document.getElementById('pre-contratos').value);
+    const meta = normalizarNumeroBr(document.getElementById('pre-meta').value);
+
+    if (!perda || parseFloat(perda) <= 0) { mostrarMensagem('Informe a perda máxima de hoje.', 'erro'); return; }
+    if (!contratos || parseInt(contratos, 10) <= 0 || parseFloat(contratos) % 1 !== 0) { mostrarMensagem('Informe o máximo de contratos — um número inteiro.', 'erro'); return; }
+    if (!meta || parseFloat(meta) <= 0) { mostrarMensagem('Informe a meta de ganho de hoje.', 'erro'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_diario',
+          token: sessao.token,
+          momento: 'pre',
+          fecha: fechaLocalISO(),
+          perda_max: perda,
+          contratos_max: contratos,
+          meta_dia: meta,
+          efeito_ontem: radioMarcado('ontem'),
+          ansiedade: radioMarcado('ansiedade'),
+          obs_pre: document.getElementById('pre-obs').value.trim()
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        registroHoje = registroHoje || {};
+        registroHoje.temPre = true;
+        registroHoje.Data_Pre = new Date().toISOString();
+        registroHoje.Perda_Max = parseFloat(perda);
+        registroHoje.Contratos_Max = parseInt(contratos, 10);
+        registroHoje.Meta_Dia = parseFloat(meta);
+        registroHoje.Efeito_Ontem = radioMarcado('ontem');
+        registroHoje.Ansiedade = parseInt(radioMarcado('ansiedade'), 10);
+        registroHoje.Obs_Pre = document.getElementById('pre-obs').value.trim();
+        mostrarMensagem('Plano da manhã salvo. Bom pregão.', 'sucesso');
+        renderHome();
+        mostrar('home');
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão. Tente novamente.', 'erro');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Salvar plano do dia';
+  }
+
+  /* ===================== Pós-mercado ===================== */
+
+  let arqDoDia = null;
+
+  function renderArquetiposPos() {
+    const grid = document.getElementById('grid-arquetipos-pos');
+    grid.innerHTML = ARQUETIPOS.map(a => {
+      const cls = 'arquetipo' + (a.id === arqDoDia ? ' selecionado' : '');
+      return '<div class="' + cls + '" onclick="escolherArqDia(\'' + a.id + '\')">' + a.icone +
+        '<div class="arq-nome">' + a.nome + '</div><div class="arq-desc">' + a.descPos + '</div></div>';
+    }).join('');
+  }
+
+  function escolherArqDia(id) { arqDoDia = id; renderArquetiposPos(); }
+
+  function abrirPos() {
+    document.getElementById('data-pos').textContent = rotuloHojeCompleto();
+    document.getElementById('aviso-sem-pre').style.display = (registroHoje && registroHoje.temPre) ? 'none' : 'block';
+    // Pré-preenche se já existe um pós salvo hoje (edição)
+    if (registroHoje && registroHoje.temPos) {
+      arqDoDia = registroHoje.Arquetipo || null;
+      marcarRadio('ck1', registroHoje.Resp_PerdaMax);
+      marcarRadio('ck2', registroHoje.Resp_Contratos);
+      marcarRadio('ck3', registroHoje.Riscos_Desnec);
+      marcarRadio('satis', registroHoje.Satisfacao);
+      document.getElementById('pos-obs').value = registroHoje.Obs_Pos || '';
+    }
+    renderArquetiposPos();
+    mostrar('pos');
+  }
+
+  async function salvarPos(btn) {
+    if (!arqDoDia) { mostrarMensagem('Escolha quem operou hoje — um dos 6 personagens.', 'erro'); return; }
+    const ck1 = radioMarcado('ck1'), ck2 = radioMarcado('ck2'), ck3 = radioMarcado('ck3');
+    if (!ck1 || !ck2 || !ck3) { mostrarMensagem('Responda o plano da manhã ponto por ponto — Sim ou Não em cada item.', 'erro'); return; }
+    const satis = radioMarcado('satis');
+    if (!satis) { mostrarMensagem('Responda se está satisfeito com a forma como operou hoje.', 'erro'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_diario',
+          token: sessao.token,
+          momento: 'pos',
+          fecha: fechaLocalISO(),
+          arquetipo: arqDoDia,
+          resp_perdamax: ck1,
+          resp_contratos: ck2,
+          riscos_desnec: ck3,
+          satisfacao: satis,
+          obs_pos: document.getElementById('pos-obs').value.trim()
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        registroHoje = registroHoje || {};
+        registroHoje.temPos = true;
+        registroHoje.Data_Pos = new Date().toISOString();
+        registroHoje.Arquetipo = arqDoDia;
+        registroHoje.Resp_PerdaMax = ck1;
+        registroHoje.Resp_Contratos = ck2;
+        registroHoje.Riscos_Desnec = ck3;
+        registroHoje.Satisfacao = satis;
+        registroHoje.Obs_Pos = document.getElementById('pos-obs').value.trim();
+
+        const d = new Date();
+        document.getElementById('texto-salvo').textContent =
+          'O dia ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') +
+          ' está registrado. Quando o CSV de hoje for carregado, o sistema confere o plano contra as operações reais.';
+        const avisoBox = document.getElementById('aviso-salvo-sem-pre');
+        if (data.aviso) {
+          document.getElementById('aviso-salvo-texto').textContent = data.aviso;
+          avisoBox.style.display = 'block';
+        } else {
+          avisoBox.style.display = 'none';
+        }
+        mostrar('salvo');
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão. Tente novamente.', 'erro');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Salvar fechamento do dia';
+  }
+
+  carregar();
+</script>
+</body>
+</html>
