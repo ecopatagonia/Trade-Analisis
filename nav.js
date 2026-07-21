@@ -9,24 +9,14 @@
 const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB1-iOU9RsH4k1jRPFGyvHOah_H5tlIa3VixAep13B4JrgeXpRaZujMoA5CROWQEpazg/exec';
 const NOME_PROJETO = 'Rumo aos 200.000';
 
-const GRUPOS_ABAS = {
-  boletim: [
-    { href: 'dashboard_painel_diario.html', label: 'Painel Diário' },
-    { href: 'curva_resultado.html', label: 'Curva de Resultado &amp; Risco' },
-    { href: 'segmentacao_temporal.html', label: 'Segmentação Temporal' },
-    { href: 'direcao_instrumento.html', label: 'Direção &amp; Instrumento' },
-    { href: 'volume_contratos.html', label: 'Volume &amp; Contratos' },
-    { href: 'registro_operacoes.html', label: 'Registro de Operações' }
-  ],
-  risco: [
-    { href: 'risco_rachas_drawdown.html', label: 'Rachas &amp; Drawdown' },
-    { href: 'risco_circuit_breaker.html', label: 'Circuit Breaker' }
-  ]
-};
-
-// Mantido por compatibilidade — qualquer código que ainda referencie ABAS_BOLETIM
-// diretamente continua funcionando sem alterações.
-const ABAS_BOLETIM = GRUPOS_ABAS.boletim;
+const ABAS_BOLETIM = [
+  { href: 'dashboard_painel_diario.html', label: 'Painel Diário' },
+  { href: 'curva_resultado.html', label: 'Curva de Resultado &amp; Risco' },
+  { href: 'segmentacao_temporal.html', label: 'Segmentação Temporal' },
+  { href: 'direcao_instrumento.html', label: 'Direção &amp; Instrumento' },
+  { href: 'volume_contratos.html', label: 'Volume &amp; Contratos' },
+  { href: 'registro_operacoes.html', label: 'Registro de Operações' }
+];
 
 function requireAuth() {
   const token = localStorage.getItem('token');
@@ -72,17 +62,16 @@ function renderHeader(opts) {
   html += '<div class="membrete-meta">';
   html += 'Logado como <strong>' + sessao.nome + '</strong>';
   if (sessao.rol === 'admin') html += ' · <a href="painel_admin.html" style="color:var(--tinta-suave);">Painel Admin</a>';
+  if (sessao.rol === 'admin') html += ' · <a href="avaliacao_inicial.html" style="color:var(--tinta-suave);">Escola</a>';
+  html += ' · <a href="calibragem_lote.html" style="color:var(--tinta-suave);">Minha Calibragem</a>';
   html += ' · <a href="portal.html" style="color:var(--tinta-suave);">Portal</a>';
   html += ' · <a href="#" onclick="logout(event)" style="color:var(--tinta-suave);">Sair</a>';
   html += '</div>';
   html += '</header>';
 
   if (opts.mostrarAbas) {
-    // opts.grupoAbas define qual conjunto de pestañas mostrar ('boletim' é o padrão,
-    // mantém o comportamento de sempre para as páginas que não passam esse parâmetro).
-    const grupo = GRUPOS_ABAS[opts.grupoAbas || 'boletim'] || GRUPOS_ABAS.boletim;
     html += '<nav class="abas">';
-    grupo.forEach(function (aba) {
+    ABAS_BOLETIM.forEach(function (aba) {
       const ativa = aba.href === opts.paginaAtiva ? ' ativa' : '';
       html += '<a class="aba' + ativa + '" href="' + aba.href + '">' + aba.label + '</a>';
     });
