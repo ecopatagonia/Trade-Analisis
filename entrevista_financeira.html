@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Entrevista Financeira</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8; --papel-escuro:#E1D9C4; --tinta:#22281F; --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F; --verde-lucro-fundo:#DEE8DF; --vermelho-prejuizo:#A13D2E; --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E; --ambar-alerta-fundo:#EFE3C8; --linha:#C9C1A9; --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ font-family:'IBM Plex Sans', sans-serif; font-size:16px; background:var(--papel); color:var(--tinta); min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px); }
+a{ color:inherit; }
+
+.seletor-aluno{ display:flex; align-items:center; gap:14px; padding:14px 32px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); flex-wrap:wrap; }
+.seletor-aluno label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); }
+.seletor-aluno select{ font-family:'IBM Plex Mono', monospace; font-size:14px; padding:8px 12px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); min-width:260px; }
+.nav-modulo{ display:flex; gap:2px; margin-left:auto; flex-wrap:wrap; }
+.nav-modulo a{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); text-decoration:none; padding:8px 14px; border:1px solid transparent; }
+.nav-modulo a.ativa{ background:var(--papel); border-color:var(--linha-forte); color:var(--tinta); font-weight:600; }
+
+main{ max-width:820px; margin:0 auto; padding:36px 28px 80px; }
+.secao{ margin-bottom:30px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:8px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-header .etapa-tag{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--tinta-suave); }
+.secao-intro{ font-size:14px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+
+.roteiro{ list-style:none; }
+.roteiro li{ padding:13px 0; border-bottom:1px solid var(--linha); font-size:14.5px; line-height:1.5; }
+.roteiro li::before{ content:"→ "; color:var(--tinta-suave); }
+.roteiro li .obs{ display:block; font-size:12px; color:var(--tinta-suave); margin-top:4px; font-style:italic; }
+
+.fechamento{ border:1px solid var(--linha-forte); padding:24px; background:rgba(255,255,255,0.4); }
+.fechamento label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); display:block; margin-bottom:8px; }
+.campo-valor{ text-align:center; margin-bottom:20px; }
+.campo-valor input{ font-family:'Fraunces', serif; font-size:30px; font-weight:600; text-align:center; border:none; border-bottom:2px solid var(--linha-forte); background:none; color:var(--tinta); width:240px; padding:6px; }
+.campo-valor input:focus{ outline:none; border-bottom-color:var(--verde-lucro); }
+.criterio-ajuda{ font-size:12.5px; color:var(--tinta-suave); text-align:center; margin-top:8px; font-style:italic; }
+.fechamento textarea{ width:100%; min-height:80px; font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; padding:10px 12px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); resize:vertical; margin-bottom:14px; }
+.btn-salvar{ font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13.5px; letter-spacing:0.04em; text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:13px 28px; cursor:pointer; }
+.btn-salvar:disabled{ opacity:0.5; cursor:not-allowed; }
+
+.historico-entrevista{ margin-top:24px; }
+.historico-entrevista summary{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); cursor:pointer; }
+.historico-item{ font-size:13px; padding:9px 0; border-bottom:1px solid var(--linha); color:var(--tinta-suave); }
+.historico-item strong{ color:var(--tinta); }
+
+.msg-topo{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; margin-bottom:16px; display:none; }
+.msg-topo.sucesso{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.msg-topo.erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+.versao-atual{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); margin-bottom:14px; display:block; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="seletor-aluno">
+    <label>Aluno</label>
+    <select id="select-aluno" onchange="trocarAluno()">
+      <option value="">Selecione um aluno...</option>
+    </select>
+    <div class="nav-modulo">
+      <a href="avaliacao_inicial.html">Avaliação Inicial</a>
+      <a href="ficha_metodo.html">Ficha de Método</a>
+      <a href="#" class="ativa">Entrevista Financeira</a>
+      <a href="calibragem_lote.html">Calibragem de Lote</a>
+    </div>
+  </div>
+
+  <main id="conteudo" style="display:none;">
+    <div class="msg-topo" id="msg-topo"></div>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Roteiro da conversa</h2><span class="etapa-tag">guia para o mentor — não é formulário</span></div>
+      <div class="secao-intro">Conversa aberta, sem preenchimento prévio pelo aluno. O objetivo não é coletar dados pessoais em uma tela, é entender — em conversa — o que o aluno pode sustentar mês a mês sem afetar sua vida.</div>
+      <ul class="roteiro">
+        <li>Como está sua situação financeira hoje — o que sobra depois das contas fixas de um mês normal?
+          <span class="obs">Pergunta de abertura, ampla — deixa o aluno definir o que é "sobrar".</span>
+        </li>
+        <li>Se você perdesse esse valor de trading este mês, o que mudaria na sua rotina?
+          <span class="obs">Testa se o número é real ou aspiracional.</span>
+        </li>
+        <li>Alguma vez o trading já afetou outra área da sua vida — relacionamento, sono, trabalho?
+          <span class="obs">Histórico de dano — ajusta o número para baixo se sim.</span>
+        </li>
+        <li>Como você se sentiria perdendo esse valor três ou quatro meses seguidos, sem resultado?
+          <span class="obs">É este o teste certo: não deve ser indiferente, mas também não deve ser catastrófico.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Fechamento do mentor</h2></div>
+      <div class="secao-intro">O valor final é definido por critério do mentor a partir da conversa — não por fórmula, não por autodeclaração isolada.</div>
+
+      <span class="versao-atual" id="versao-atual">Nenhuma entrevista registrada ainda</span>
+
+      <div class="fechamento">
+        <div class="campo-valor">
+          <label>Fundo perdido mensal acordado (R$)</label>
+          <input type="text" id="campo-fundo" placeholder="0,00">
+          <div class="criterio-ajuda">critério: incomoda se repetir todo mês, mas não compromete a vida do aluno</div>
+        </div>
+
+        <label>Nota do mentor (sempre obrigatória)</label>
+        <textarea id="campo-nota" placeholder="O que na conversa sustenta este número..."></textarea>
+
+        <button class="btn-salvar" id="btn-salvar" onclick="salvarEntrevista()">Salvar entrevista e versionar</button>
+      </div>
+    </section>
+
+    <details class="historico-entrevista">
+      <summary>Ver histórico de entrevistas (<span id="qtd-historico">0</span>)</summary>
+      <div id="lista-historico"></div>
+    </details>
+  </main>
+
+  <div class="carregando" id="carregando">Carregando alunos...</div>
+
+<script src="nav.js"></script>
+<script>
+  let sessaoAtual = null;
+  let alunoDdi = null, alunoCelular = null;
+
+  async function carregar() {
+    sessaoAtual = iniciarPagina({ paginaAtiva: 'entrevista_financeira.html', mostrarAbas: false, eyebrow: 'Entrevista Financeira', somenteAdmin: true });
+    if (!sessaoAtual) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=usuarios&token=' + encodeURIComponent(sessaoAtual.token));
+      const data = await resp.json();
+      if (!data.ok) { document.getElementById('carregando').textContent = 'Erro: ' + data.error; return; }
+      const select = document.getElementById('select-aluno');
+      data.usuarios.filter(u => u.Ativo === 'Sim').forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.DDI + '|' + u.Celular;
+        opt.textContent = u.Nome;
+        select.appendChild(opt);
+      });
+      document.getElementById('carregando').style.display = 'none';
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao buscar alunos.';
+    }
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('msg-topo');
+    el.textContent = texto;
+    el.className = 'msg-topo ' + tipo;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  async function trocarAluno() {
+    const valor = document.getElementById('select-aluno').value;
+    document.getElementById('conteudo').style.display = 'none';
+    if (!valor) return;
+
+    const [ddi, celular] = valor.split('|');
+    alunoDdi = ddi; alunoCelular = celular;
+
+    document.getElementById('campo-fundo').value = '';
+    document.getElementById('campo-nota').value = '';
+    document.getElementById('conteudo').style.display = 'block';
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=entrevista_financeira&token=' + encodeURIComponent(sessaoAtual.token) +
+        '&ddi_alvo=' + encodeURIComponent(ddi) + '&celular_alvo=' + encodeURIComponent(celular));
+      const data = await resp.json();
+      if (data.ok) {
+        if (data.atual) {
+          document.getElementById('versao-atual').textContent =
+            `Versão atual: v${data.atual.Versao} · R$ ${Number(data.atual.Fundo_Perdido_Mensal).toFixed(2)} · ${new Date(data.atual.Data).toLocaleDateString('pt-BR')}`;
+        } else {
+          document.getElementById('versao-atual').textContent = 'Nenhuma entrevista registrada ainda — esta será a v1';
+        }
+        renderizarHistorico(data.historico || []);
+      }
+    } catch (err) {
+      mostrarMensagem('Erro ao carregar entrevista existente.', 'erro');
+    }
+  }
+
+  function renderizarHistorico(historico) {
+    document.getElementById('qtd-historico').textContent = historico.length;
+    document.getElementById('lista-historico').innerHTML = historico.slice().reverse().map(h => `
+      <div class="historico-item">
+        <strong>v${h.Versao} · ${new Date(h.Data).toLocaleDateString('pt-BR')}</strong> —
+        Fundo perdido: R$ ${Number(h.Fundo_Perdido_Mensal).toFixed(2)}. ${h.Nota_Mentor}
+        <em>Mentor: ${h.Instrutor_Nome}.</em>
+      </div>`).join('');
+  }
+
+  async function salvarEntrevista() {
+    if (!alunoDdi) { mostrarMensagem('Selecione um aluno primeiro.', 'erro'); return; }
+
+    const fundo = document.getElementById('campo-fundo').value;
+    const nota = document.getElementById('campo-nota').value.trim();
+
+    if (!fundo || parseFloat(fundo) <= 0) { mostrarMensagem('Informe o fundo perdido mensal acordado.', 'erro'); return; }
+    if (!nota) { mostrarMensagem('A nota do mentor é obrigatória.', 'erro'); return; }
+
+    const btn = document.getElementById('btn-salvar');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_entrevista_financeira',
+          token: sessaoAtual.token,
+          ddi_alvo: alunoDdi,
+          celular_alvo: alunoCelular,
+          fundo_perdido_mensal: fundo,
+          nota_mentor: nota
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        mostrarMensagem(`Entrevista salva como v${data.versao}.`, 'sucesso');
+        trocarAluno();
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão ao salvar.', 'erro');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar entrevista e versionar';
+    }
+  }
+
+  carregar();
+</script>
+</body>
+</html>
