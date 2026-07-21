@@ -378,436 +378,241 @@ function filtrarPorJanela(trades, janela, hoje) {
 }
 
 /**
- * ===== Funciones POR DIA (para Controle de Risco) =====
- * Agrupan os trades por dia ANTES de calcular, em vez de tratar cada operação
- * como unidade. Dia é a unidade correta para cálculos de capital/risco —
- * o capital se expõe e se repõe por dia, não por operação isolada. As funções
- * por operação acima continuam existindo sem alteração, para o contexto
- * comportamental (ver CONTEXTO_TECNICO_PROYECTO.md).
- *
- * Todas recebem o array de trades tal como vem de doGet?action=trades — o
- * agrupamento por dia é feito internamente, a página não precisa fazer nada
- * antes de chamar.
+ * ===== Janela temporal (presets) e séries diárias — usado por Registro de Operações
+ * e futuramente por Curva de Resultado. Funções puras, não tocam o DOM.
+ * A referência de "hoje" é sempre a última data operada nos dados reais do trader
+ * (nunca a data real do sistema) — evita assumir atividade que não está nos dados.
  */
 
-function agruparPorDia(trades) {
-  const grupos = {};
-  trades.forEach(t => {
-    const chave = chaveDia(dataDoTrade(t));
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push(t);
-  });
-  return Object.keys(grupos).sort().map(chave => {
-    const tradesDoDia = grupos[chave];
-    const resultado = tradesDoDia.reduce((acc, t) => acc + (Number(t['Resultado_R$']) || 0), 0);
-    return { dia: chave, data: new Date(chave + 'T12:00:00'), resultado, n: tradesDoDia.length, trades: tradesDoDia };
-  });
-}
-
-function filtrarPorRangoFechas(trades, dataInicio, dataFim) {
-  return trades.filter(t => {
+function obterUltimaDataOperada(trades) {
+  if (trades.length === 0) return null;
+  return trades.reduce((max, t) => {
     const d = dataDoTrade(t);
-    if (dataInicio && d < dataInicio) return false;
-    if (dataFim && d > dataFim) return false;
-    return true;
-  });
+    return d > max ? d : max;
+  }, dataDoTrade(trades[0]));
 }
-
-function calcularBasicoPorDia(trades) {
-  const dias = agruparPorDia(trades);
-  const n = dias.length;
-  if (n === 0) {
-    return { n: 0, resultado: 0, winRate: null, expectancy: null, melhorDia: null, piorDia: null, dias: [] };
-  }
-  const resultados = dias.map(d => d.resultado);
-  const resultado = resultados.reduce((a, b) => a + b, 0);
-  const ganhos = resultados.filter(r => r >= 0);
-  const winRate = (ganhos.length / n) * 100;
-  const expectancy = resultado / n;
-  const melhorDia = Math.max(...resultados);
-  const piorDia = Math.min(...resultados);
-  return { n, resultado, winRate, expectancy, melhorDia, piorDia, dias };
-}
-
-// Percentil linear (método comum, mesmo usado por numpy.percentile por padrão).
-// valores: array de números (não precisa vir ordenado, a função ordena por conta própria).
-function calcularPercentil(valores, p) {
-  if (!valores || valores.length === 0) return null;
-  const arr = [...valores].sort((a, b) => a - b);
-  if (arr.length === 1) return arr[0];
-  const idx = (p / 100) * (arr.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return arr[lo];
-  const frac = idx - lo;
-  return arr[lo] + (arr[hi] - arr[lo]) * frac;
-}
-
-function calcularPercentisDiarios(trades) {
-  const dias = agruparPorDia(trades);
-  const resultados = dias.map(d => d.resultado);
-  if (resultados.length === 0) {
-    return { n: 0, p5: null, p25: null, mediana: null, p75: null, p95: null, piorDia: null, melhorDia: null, media: null };
-  }
-  return {
-    n: resultados.length,
-    p5: calcularPercentil(resultados, 5),
-    p25: calcularPercentil(resultados, 25),
-    mediana: calcularPercentil(resultados, 50),
-    p75: calcularPercentil(resultados, 75),
-    p95: calcularPercentil(resultados, 95),
-    piorDia: Math.min(...resultados),
-    melhorDia: Math.max(...resultados),
-    media: resultados.reduce((a, b) => a + b, 0) / resultados.length
-  };
-}
-
-// Distribuição completa de rachas por dia (não só o máximo) — necessária para
-// comparar observado vs. esperado teórico, como nas páginas de Controle de Risco.
-function calcularDistribuicaoRachasDias(trades) {
-  const dias = agruparPorDia(trades);
-  if (dias.length === 0) {
-    return { maxGanhos: 0, maxPerdas: 0, distribuicaoPerdas: {}, distribuicaoGanhos: {}, nEventosPerdas: 0, nEventosGanhos: 0 };
-  }
-  let maxGanhos = 0, maxPerdas = 0, atualTipo = null, atualTamanho = 0;
-  const distribuicaoPerdas = {};
-  const distribuicaoGanhos = {};
-
-  function fecharRachaAtual() {
-    if (atualTipo === 'perda' && atualTamanho > 0) {
-      distribuicaoPerdas[atualTamanho] = (distribuicaoPerdas[atualTamanho] || 0) + 1;
-    }
-    if (atualTipo === 'ganho' && atualTamanho > 0) {
-      distribuicaoGanhos[atualTamanho] = (distribuicaoGanhos[atualTamanho] || 0) + 1;
-    }
-  }
-
-  dias.forEach(d => {
-    const tipo = d.resultado >= 0 ? 'ganho' : 'perda';
-    if (tipo === atualTipo) {
-      atualTamanho++;
-    } else {
-      fecharRachaAtual();
-      atualTipo = tipo;
-      atualTamanho = 1;
-    }
-    if (tipo === 'ganho') maxGanhos = Math.max(maxGanhos, atualTamanho);
-    else maxPerdas = Math.max(maxPerdas, atualTamanho);
-  });
-  fecharRachaAtual(); // fecha a última racha, que não é fechada dentro do forEach
-
-  const nEventosPerdas = Object.values(distribuicaoPerdas).reduce((a, b) => a + b, 0);
-  const nEventosGanhos = Object.values(distribuicaoGanhos).reduce((a, b) => a + b, 0);
-
-  return { maxGanhos, maxPerdas, distribuicaoPerdas, distribuicaoGanhos, nEventosPerdas, nEventosGanhos };
-}
-
-// Probabilidade teórica de uma racha (de perda ou ganho) ter exatamente N dias/operações
-// seguidos, assumindo independência estatística total. Fórmula geométrica: q^(N-1) * (1-q),
-// onde q é a probabilidade do evento que forma a racha (ex.: q = taxa de dias perdedores
-// para uma racha de perdas). Serve para comparar observado vs. esperado.
-function probabilidadeTeoricaRacha(q, n) {
-  return Math.pow(q, n - 1) * (1 - q);
-}
-
-function calcularDrawdownDiario(trades) {
-  const dias = agruparPorDia(trades);
-  let equity = 0, peak = 0, maxDd = 0, diaMaxDd = null, peakNoMomentoMaxDd = 0;
-  const curva = [];
-
-  dias.forEach(d => {
-    equity += d.resultado;
-    if (equity > peak) peak = equity;
-    const dd = peak - equity;
-    if (dd > maxDd) {
-      maxDd = dd;
-      diaMaxDd = d.dia;
-      peakNoMomentoMaxDd = peak;
-    }
-    curva.push({ dia: d.dia, acumulado: equity });
-  });
-
-  // Tempo de recuperação: primeiro dia, após o pior ponto, em que o acumulado
-  // volta a alcançar o pico que havia antes daquele drawdown.
-  let diaRecuperacao = null;
-  let diasParaRecuperar = null;
-  if (diaMaxDd) {
-    const idxMaxDd = curva.findIndex(c => c.dia === diaMaxDd);
-    for (let i = idxMaxDd + 1; i < curva.length; i++) {
-      if (curva[i].acumulado >= peakNoMomentoMaxDd) {
-        diaRecuperacao = curva[i].dia;
-        diasParaRecuperar = i - idxMaxDd;
-        break;
-      }
-    }
-  }
-
-  return {
-    maxDrawdown: maxDd,
-    diaMaxDrawdown: diaMaxDd,
-    peakNoMomentoMaxDd,
-    equityFinal: equity,
-    diaRecuperacao,       // null enquanto não recuperou
-    diasParaRecuperar,    // null enquanto não recuperou
-    curva
-  };
-}
-
-// Simulação retroativa de um circuit breaker diário: aplica um teto de perda
-// por dia (limiteNegativo, ex.: -4000) sobre o resultado real de cada dia —
-// dias que já foram positivos ficam intocados. Usado para mostrar o efeito
-// histórico de um limite antes de ativá-lo de verdade.
-function simularCircuitBreakerDiario(trades, limiteNegativo) {
-  const dias = agruparPorDia(trades);
-  const diasComFreio = dias.map(d => ({
-    dia: d.dia,
-    resultadoOriginal: d.resultado,
-    resultadoComFreio: Math.max(d.resultado, limiteNegativo)
-  }));
-
-  const resultadoTotalOriginal = diasComFreio.reduce((a, d) => a + d.resultadoOriginal, 0);
-  const resultadoTotalComFreio = diasComFreio.reduce((a, d) => a + d.resultadoComFreio, 0);
-
-  let equity = 0, peak = 0, maxDd = 0;
-  diasComFreio.forEach(d => {
-    equity += d.resultadoComFreio;
-    if (equity > peak) peak = equity;
-    maxDd = Math.max(maxDd, peak - equity);
-  });
-
-  return {
-    n: dias.length,
-    resultadoTotalOriginal,
-    resultadoTotalComFreio,
-    maxDrawdownComFreio: maxDd,
-    diasAfetados: diasComFreio.filter(d => d.resultadoOriginal < limiteNegativo).length
-  };
-}
-
-// Classificação de confiabilidade da amostra, calibrada a DIAS (diferente do
-// n<30 usado nas páginas por operação). Ver discussão no chat: percentis de
-// cauda (P5/P95) e bootstrap por blocos precisam de mais dias que uma mediana simples.
-function avaliarConfiabilidadeAmostraDias(n) {
-  if (n < 20) {
-    return { nivel: 'insuficiente', mensagem: 'Amostra insuficiente até para estatística básica (mediana). Use qualquer número aqui com muita cautela.' };
-  }
-  if (n < 60) {
-    return { nivel: 'basico', mensagem: 'Suficiente para mediana e expectancy. Percentis de cauda (P5/P95) ainda pouco confiáveis — poucos dias na cauda.' };
-  }
-  if (n < 120) {
-    return { nivel: 'moderado', mensagem: 'Confiável para mediana e P25/P75. P5/P95 aceitável, mas com cautela.' };
-  }
-  return { nivel: 'bom', mensagem: 'Amostra robusta para percentis, incluindo cauda (P5/P95).' };
-}
-
-// Distribuição completa de rachas por OPERAÇÃO (paralela a calcularDistribuicaoRachasDias,
-// mas sem agrupar por dia — cada operação é a unidade). Complementa
-// calcularRachaMaxima (que só retorna o máximo) com a distribuição completa,
-// necessária para comparar observado vs. esperado.
-function calcularDistribuicaoRachasOperacoes(tradesOrdenados) {
-  if (tradesOrdenados.length === 0) {
-    return { maxGanhos: 0, maxPerdas: 0, distribuicaoPerdas: {}, distribuicaoGanhos: {}, nEventosPerdas: 0, nEventosGanhos: 0 };
-  }
-  let maxGanhos = 0, maxPerdas = 0, atualTipo = null, atualTamanho = 0;
-  const distribuicaoPerdas = {};
-  const distribuicaoGanhos = {};
-
-  function fecharRachaAtual() {
-    if (atualTipo === 'perda' && atualTamanho > 0) {
-      distribuicaoPerdas[atualTamanho] = (distribuicaoPerdas[atualTamanho] || 0) + 1;
-    }
-    if (atualTipo === 'ganho' && atualTamanho > 0) {
-      distribuicaoGanhos[atualTamanho] = (distribuicaoGanhos[atualTamanho] || 0) + 1;
-    }
-  }
-
-  tradesOrdenados.forEach(t => {
-    const tipo = (Number(t['Resultado_R$']) || 0) >= 0 ? 'ganho' : 'perda';
-    if (tipo === atualTipo) {
-      atualTamanho++;
-    } else {
-      fecharRachaAtual();
-      atualTipo = tipo;
-      atualTamanho = 1;
-    }
-    if (tipo === 'ganho') maxGanhos = Math.max(maxGanhos, atualTamanho);
-    else maxPerdas = Math.max(maxPerdas, atualTamanho);
-  });
-  fecharRachaAtual();
-
-  const nEventosPerdas = Object.values(distribuicaoPerdas).reduce((a, b) => a + b, 0);
-  const nEventosGanhos = Object.values(distribuicaoGanhos).reduce((a, b) => a + b, 0);
-
-  return { maxGanhos, maxPerdas, distribuicaoPerdas, distribuicaoGanhos, nEventosPerdas, nEventosGanhos };
-}
-
-// Classifica o nível de agrupamento (clustering) de uma distribuição de rachas
-// de perda, comparando observado vs. esperado teórico (independência estatística).
-// Usado para decidir QUAL nota de analista mostrar — a "razão" (observado/esperado)
-// no tamanho de racha mais desviado do esperado é o que determina o nível.
-// winRatePercent: taxa de acerto (0-100) da unidade usada (dia ou operação).
-function avaliarAgrupamentoRachas(distribuicaoPerdas, nEventosPerdas, winRatePercent) {
-  const q = 1 - (winRatePercent / 100); // probabilidade do evento "perda"
-  let maiorRazao = 0, tamanho = null, observado = null, esperado = null;
-
-  Object.keys(distribuicaoPerdas).forEach(chave => {
-    const n = Number(chave);
-    const obs = distribuicaoPerdas[chave];
-    const esp = Math.max(probabilidadeTeoricaRacha(q, n) * nEventosPerdas, 0.001); // piso para evitar divisão por ~0
-    const razao = obs / esp;
-    if (razao > maiorRazao) {
-      maiorRazao = razao;
-      tamanho = n;
-      observado = obs;
-      esperado = esp;
-    }
-  });
-
-  let nivel;
-  if (maiorRazao < 1.5) nivel = 'nenhum';
-  else if (maiorRazao < 3) nivel = 'leve';
-  else if (maiorRazao < 10) nivel = 'moderado';
-  else nivel = 'forte';
-
-  return { nivel, razao: maiorRazao, tamanho, observado, esperado };
-}
-
-/**
- * ===== Funções para Registro de Operações (janela temporal + gráficos diários) =====
- * Reconstruídas a partir da leitura de registro_operacoes.html de produção —
- * o stats.js que as continha originalmente foi perdido ao ser sobrescrito.
- */
 
 function inicioDoDia(data) {
-  return new Date(data.getFullYear(), data.getMonth(), data.getDate());
+  const d = new Date(data);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 function fimDoDia(data) {
-  return new Date(data.getFullYear(), data.getMonth(), data.getDate(), 23, 59, 59, 999);
+  const d = new Date(data);
+  d.setHours(23, 59, 59, 999);
+  return d;
 }
 
-// Calcula os limites {inicio, fim} de uma janela de período, SEM filtrar os
-// trades (isso é feito depois, em aplicarEDarRenderInterno). "ultimo_dia" e
-// todas as janelas relativas (semana/mes/7dias/30dias/ano) ancoram o FIM no
-// último pregão realmente presente na base — não na data real de hoje — para
-// que a página não fique com dias finais vazios se o CSV de hoje ainda não
-// foi carregado. "personalizado" usa as datas escolhidas manualmente.
-function calcularJanelaPreset(todosOsTrades, preset, customInicio, customFim) {
+function calcularJanelaPreset(trades, preset, customInicio, customFim) {
   if (preset === 'personalizado') {
     if (!customInicio || !customFim) return null;
     return { inicio: inicioDoDia(customInicio), fim: fimDoDia(customFim) };
   }
 
-  if (todosOsTrades.length === 0) return null;
+  const ref = obterUltimaDataOperada(trades);
+  if (!ref) return null;
 
-  const ultimaData = todosOsTrades.reduce((max, t) => {
-    const d = dataDoTrade(t);
-    return d > max ? d : max;
-  }, dataDoTrade(todosOsTrades[0]));
-  const fimAncora = inicioDoDia(ultimaData);
-
-  let inicio;
-  switch (preset) {
-    case 'ultimo_dia':
-      inicio = fimAncora;
-      break;
-    case 'semana': {
-      const diaSemana = fimAncora.getDay() === 0 ? 6 : fimAncora.getDay() - 1; // segunda=0
-      inicio = new Date(fimAncora);
-      inicio.setDate(fimAncora.getDate() - diaSemana);
-      break;
-    }
-    case 'mes':
-      inicio = new Date(fimAncora.getFullYear(), fimAncora.getMonth(), 1);
-      break;
-    case '7dias':
-      inicio = new Date(fimAncora);
-      inicio.setDate(fimAncora.getDate() - 6);
-      break;
-    case '30dias':
-      inicio = new Date(fimAncora);
-      inicio.setDate(fimAncora.getDate() - 29);
-      break;
-    case 'ano':
-      inicio = new Date(fimAncora.getFullYear(), 0, 1);
-      break;
-    default:
-      inicio = fimAncora;
+  if (preset === 'ultimo_dia') {
+    return { inicio: inicioDoDia(ref), fim: fimDoDia(ref) };
   }
-
-  return { inicio: inicioDoDia(inicio), fim: fimDoDia(ultimaData) };
+  if (preset === 'semana') {
+    const diaSemana = ref.getDay() === 0 ? 6 : ref.getDay() - 1; // segunda=0
+    const segunda = new Date(ref);
+    segunda.setDate(ref.getDate() - diaSemana);
+    return { inicio: inicioDoDia(segunda), fim: fimDoDia(ref) };
+  }
+  if (preset === 'mes') {
+    const primeiroDia = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    return { inicio: inicioDoDia(primeiroDia), fim: fimDoDia(ref) };
+  }
+  if (preset === '7dias') {
+    const inicio = new Date(ref);
+    inicio.setDate(ref.getDate() - 6);
+    return { inicio: inicioDoDia(inicio), fim: fimDoDia(ref) };
+  }
+  if (preset === '30dias') {
+    const inicio = new Date(ref);
+    inicio.setDate(ref.getDate() - 29);
+    return { inicio: inicioDoDia(inicio), fim: fimDoDia(ref) };
+  }
+  if (preset === 'ano') {
+    const primeiroDiaAno = new Date(ref.getFullYear(), 0, 1);
+    return { inicio: inicioDoDia(primeiroDiaAno), fim: fimDoDia(ref) };
+  }
+  // padrão de segurança: último dia operado
+  return { inicio: inicioDoDia(ref), fim: fimDoDia(ref) };
 }
 
-// Gera uma série com UM item por dia corrido entre inicio e fim (inclusive),
-// mesmo para dias sem operação — necessário para os gráficos de evolução
-// diária mostrarem fins de semana e "buracos" sem operação corretamente.
+// Gera um item por dia corrido dentro do intervalo (incluindo fins de semana),
+// cada um com: data, ehFimDeSemana, temOperacao, resultadoDia, nOperacoes.
 function gerarSeriesDiarias(trades, inicio, fim) {
   const porDia = {};
   trades.forEach(t => {
-    const chave = chaveDia(dataDoTrade(t));
-    porDia[chave] = (porDia[chave] || 0) + (Number(t['Resultado_R$']) || 0);
+    const d = dataDoTrade(t);
+    if (d < inicio || d > fim) return;
+    const chave = chaveDia(d);
+    if (!porDia[chave]) porDia[chave] = [];
+    porDia[chave].push(t);
   });
 
   const dias = [];
-  const cursor = inicioDoDia(inicio);
-  const limite = inicioDoDia(fim);
-  while (cursor <= limite) {
+  const cursor = new Date(inicio);
+  while (cursor <= fim) {
     const chave = chaveDia(cursor);
-    const diaSemana = cursor.getDay();
+    const diaSemana = cursor.getDay(); // 0=domingo ... 6=sábado
+    const ehFimDeSemana = (diaSemana === 0 || diaSemana === 6);
+    const tradesDoDia = porDia[chave] || [];
+    const resultadoDia = tradesDoDia.reduce((acc, t) => acc + (Number(t['Resultado_R$']) || 0), 0);
     dias.push({
       data: new Date(cursor),
-      ehFimDeSemana: diaSemana === 0 || diaSemana === 6,
-      temOperacao: Object.prototype.hasOwnProperty.call(porDia, chave),
-      resultadoDia: porDia[chave] || 0
+      ehFimDeSemana: ehFimDeSemana,
+      temOperacao: tradesDoDia.length > 0,
+      resultadoDia: resultadoDia,
+      nOperacoes: tradesDoDia.length
     });
     cursor.setDate(cursor.getDate() + 1);
   }
   return dias;
 }
 
-// Conta quantos dias úteis (pregões possíveis) e quantos desses foram
-// realmente operados, dentro de uma série gerada por gerarSeriesDiarias.
+// Conta pregões (dias úteis dentro da janela) e quantos desses tiveram operação.
 function contarPregoesEOperados(diasArray) {
-  const pregoes = diasArray.filter(d => !d.ehFimDeSemana).length;
-  const operados = diasArray.filter(d => d.temOperacao).length;
-  return { pregoes, operados };
+  let pregoes = 0, operados = 0;
+  diasArray.forEach(d => {
+    if (!d.ehFimDeSemana) {
+      pregoes++;
+      if (d.temOperacao) operados++;
+    }
+  });
+  return { pregoes: pregoes, operados: operados };
 }
 
-// Média acumulada corrida, considerando apenas os dias efetivamente operados
-// (dias sem operação não diluem a média — ficam null até a primeira operação).
+// Média acumulada do resultado diário: soma apenas os dias com operação e mantém
+// o último valor nos dias sem operação/fins de semana (linha "plana").
 function calcularMediaAcumuladaDiaria(diasArray) {
-  let soma = 0, n = 0;
-  return diasArray.map(d => {
-    if (d.temOperacao) {
-      soma += d.resultadoDia;
-      n++;
+  let somaResultados = 0;
+  let diasComOperacao = 0;
+  let ultimaMedia = null;
+  return diasArray.map(dia => {
+    if (dia.temOperacao) {
+      somaResultados += dia.resultadoDia;
+      diasComOperacao++;
+      ultimaMedia = somaResultados / diasComOperacao;
     }
-    return n > 0 ? soma / n : null;
+    return ultimaMedia;
   });
 }
 
-// Resultado acumulado (soma corrida) dia a dia, incluindo os dias sem
-// operação (que apenas mantêm o valor estável, sem alterá-lo).
+// Soma acumulada do resultado diário. Como resultadoDia já é 0 nos dias sem
+// operação, a soma corrida naturalmente fica "plana" nesses dias.
 function calcularAcumuladoDiario(diasArray) {
   let soma = 0;
-  return diasArray.map(d => { soma += d.resultadoDia; return soma; });
+  return diasArray.map(dia => {
+    soma += dia.resultadoDia;
+    return soma;
+  });
+}
+
+function desvioPadrao(valores) {
+  if (valores.length === 0) return null;
+  const m = media(valores);
+  const variancia = valores.reduce((acc, v) => acc + Math.pow(v - m, 2), 0) / valores.length;
+  return Math.sqrt(variancia);
 }
 
 function calcularProfitFactor(trades) {
-  if (trades.length === 0) return null;
   const resultados = trades.map(t => Number(t['Resultado_R$']) || 0);
-  const ganhos = resultados.filter(r => r > 0).reduce((a, b) => a + b, 0);
-  const perdas = resultados.filter(r => r < 0).reduce((a, b) => a + b, 0);
-  if (perdas === 0) return ganhos > 0 ? Infinity : null;
-  return ganhos / Math.abs(perdas);
+  const somaGanhos = resultados.filter(r => r > 0).reduce((a, b) => a + b, 0);
+  const somaPerdas = Math.abs(resultados.filter(r => r < 0).reduce((a, b) => a + b, 0));
+  if (somaPerdas === 0) return somaGanhos > 0 ? Infinity : null;
+  return somaGanhos / somaPerdas;
 }
 
-// Desvio padrão populacional (divide por n, não por n-1) — evitamos n-1 de
-// propósito para não gerar NaN quando a seleção filtrada tiver só 1 operação.
-function desvioPadrao(valores) {
-  if (!valores || valores.length === 0) return null;
-  const n = valores.length;
-  const media = valores.reduce((a, b) => a + b, 0) / n;
-  const variancia = valores.reduce((a, b) => a + Math.pow(b - media, 2), 0) / n;
-  return Math.sqrt(variancia);
+/**
+ * ===== Calibragem de Lote (Escola de Reabilitação de Traders) =====
+ * Cascata: Perda de trailing histórica × Margem de segurança → Perda calibrada.
+ * Custo típico = lote × perda calibrada × R$0,20/pt.
+ * Cor por % do risco/trade (não por % do teto diário, nem por % do fundo mensal —
+ * esses ficam como colunas informativas ao lado, sem cor própria).
+ * A racha máxima real do aluno (calcularRachaMaxima, já existente acima) decide
+ * sobrevivência do fundo mensal — é um teste SEPARADO do nível de risco por operação.
+ */
+
+function calcularPerdaCalibrada(perdaTrailingPts, margemSeguranca) {
+  return perdaTrailingPts * margemSeguranca;
+}
+
+function custoTipicoPorLote(lote, perdaCalibradaPts, valorPorPonto = 0.20) {
+  return lote * perdaCalibradaPts * valorPorPonto;
+}
+
+function calcularTetoDiario(fundoPerdidoMensal, diasMalosTolerados) {
+  return fundoPerdidoMensal / diasMalosTolerados;
+}
+
+function calcularRiscoPorTrade(tetoDiario, operacoesPorDia = 3) {
+  return tetoDiario / operacoesPorDia;
+}
+
+function classificarNivelRisco(percentualRiscoTrade) {
+  if (percentualRiscoTrade <= 60) return 'Verde';
+  if (percentualRiscoTrade <= 100) return 'Amarelo';
+  return 'Vermelho';
+}
+
+function calcularCustoRacha(lote, perdaCalibradaPts, operacoesPorDia, rachaDias, valorPorPonto = 0.20) {
+  return lote * perdaCalibradaPts * valorPorPonto * operacoesPorDia * rachaDias;
+}
+
+/**
+ * Gera a tabela completa de calibragem, uma linha por lote candidato.
+ *
+ * opts = {
+ *   perdaTrailingPts, margemSeguranca, fundoPerdidoMensal, rachaMaximaDias,
+ *   diasMalosTolerados (opcional, default 5), operacoesPorDia (opcional, default 3),
+ *   loteMaximo (opcional, default 6), valorPorPonto (opcional, default 0.20)
+ * }
+ */
+function gerarTabelaCalibragem(opts) {
+  const operacoesPorDia = opts.operacoesPorDia || 3;
+  const diasMalosTolerados = opts.diasMalosTolerados || 5;
+  const loteMaximo = opts.loteMaximo || 6;
+  const valorPorPonto = opts.valorPorPonto || 0.20;
+
+  const perdaCalibrada = calcularPerdaCalibrada(opts.perdaTrailingPts, opts.margemSeguranca);
+  const tetoDiario = calcularTetoDiario(opts.fundoPerdidoMensal, diasMalosTolerados);
+  const riscoPorTrade = calcularRiscoPorTrade(tetoDiario, operacoesPorDia);
+
+  const linhas = [];
+  for (let lote = 1; lote <= loteMaximo; lote++) {
+    const custoTipico = custoTipicoPorLote(lote, perdaCalibrada, valorPorPonto);
+    const percentualRisco = (custoTipico / riscoPorTrade) * 100;
+    const percentualTetoDiario = ((custoTipico * operacoesPorDia) / tetoDiario) * 100;
+    const custoRacha = calcularCustoRacha(lote, perdaCalibrada, operacoesPorDia, opts.rachaMaximaDias, valorPorPonto);
+    const sobreviveMes = custoRacha <= opts.fundoPerdidoMensal;
+    const nivelRisco = classificarNivelRisco(percentualRisco);
+
+    linhas.push({ lote, custoTipico, percentualRisco, nivelRisco, percentualTetoDiario, custoRacha, sobreviveMes });
+  }
+  return linhas;
+}
+
+/**
+ * Zona filtra a faixa de risco que o aluno pode ter selecionada:
+ * Vermelha → só Verde. Verde/Amarela → Verde ou Amarelo (nunca Vermelho).
+ * Recomendado = maior lote dentro da faixa permitida que também sobrevive a racha.
+ * Retorna null se nenhum lote atende os dois critérios — nesse caso a tela de
+ * Calibragem de Lote aplica o piso duro de 1 mini (ver calibragem_lote.html).
+ */
+function loteRecomendado(linhasTabela, zonaAluno) {
+  const faixaPermitida = zonaAluno === 'Vermelha' ? ['Verde'] : ['Verde', 'Amarelo'];
+  const candidatos = linhasTabela.filter(l => faixaPermitida.includes(l.nivelRisco) && l.sobreviveMes);
+  if (candidatos.length === 0) return null;
+  return candidatos.reduce((melhor, atual) => (atual.lote > melhor.lote ? atual : melhor));
+}
+
+function loteEstaBloqueado(linha, zonaAluno) {
+  const faixaPermitida = zonaAluno === 'Vermelha' ? ['Verde'] : ['Verde', 'Amarelo'];
+  return !faixaPermitida.includes(linha.nivelRisco);
 }
