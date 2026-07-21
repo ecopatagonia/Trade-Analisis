@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Calibragem de Lote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8; --papel-escuro:#E1D9C4; --tinta:#22281F; --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F; --verde-lucro-fundo:#DEE8DF; --vermelho-prejuizo:#A13D2E; --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E; --ambar-alerta-fundo:#EFE3C8; --linha:#C9C1A9; --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ font-family:'IBM Plex Sans', sans-serif; font-size:16px; background:var(--papel); color:var(--tinta); min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px); }
+a{ color:inherit; }
+
+.seletor-aluno{ display:flex; align-items:center; gap:14px; padding:14px 32px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); flex-wrap:wrap; }
+.seletor-aluno label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); }
+.seletor-aluno select{ font-family:'IBM Plex Mono', monospace; font-size:14px; padding:8px 12px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); min-width:260px; }
+.zona-badge{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; padding:4px 10px; border-radius:100px; }
+.zona-badge.Verde{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.zona-badge.Amarela{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+.zona-badge.Vermelha{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.nav-modulo{ display:flex; gap:2px; margin-left:auto; flex-wrap:wrap; }
+.nav-modulo a{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); text-decoration:none; padding:8px 14px; border:1px solid transparent; }
+.nav-modulo a.ativa{ background:var(--papel); border-color:var(--linha-forte); color:var(--tinta); font-weight:600; }
+
+main{ max-width:1080px; margin:0 auto; padding:36px 28px 80px; }
+.secao{ margin-bottom:34px; }
+.secao-header{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; padding-bottom:9px; border-bottom:2px solid var(--tinta); flex-wrap:wrap; gap:6px; }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-intro{ font-size:14px; color:var(--tinta-suave); margin-bottom:14px; line-height:1.6; }
+.info-icone{ display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid var(--tinta-suave); font-size:9.5px; color:var(--tinta-suave); cursor:help; font-family:'IBM Plex Mono', monospace; }
+
+.grade-inputs{ display:grid; grid-template-columns:repeat(4, 1fr); border:1px solid var(--linha-forte); margin-bottom:6px; }
+.campo-input{ padding:14px 16px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.campo-input:nth-child(4n){ border-right:none; }
+.campo-input .rot{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.campo-input .val{ font-family:'IBM Plex Mono', monospace; font-size:18px; font-weight:600; }
+.campo-input .origem{ font-size:10px; color:var(--tinta-suave); margin-top:4px; font-style:italic; }
+.campo-input a.link-editar{ font-size:10px; color:var(--verde-lucro); }
+
+table.calibragem{ width:100%; border-collapse:collapse; font-size:14px; }
+table.calibragem th{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); text-align:center; padding:10px 8px; border-bottom:2px solid var(--tinta); line-height:1.5; }
+table.calibragem th input{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; width:32px; text-align:center; border:none; border-bottom:1px dashed var(--tinta-suave); background:none; color:var(--tinta); }
+table.calibragem td{ padding:12px 8px; border-bottom:1px solid var(--linha); font-family:'IBM Plex Mono', monospace; text-align:center; }
+table.calibragem td.lote-col{ font-family:'Fraunces', serif; font-size:17px; font-weight:600; text-align:left; padding-left:16px; }
+table.calibragem tr.linha-recomendada{ background:rgba(59,110,79,0.07); }
+table.calibragem tr.linha-piso-duro{ background:rgba(184,134,46,0.09); }
+table.calibragem tr.linha-selecionada{ background:rgba(59,110,79,0.15) !important; box-shadow: inset 3px 0 0 var(--verde-lucro); }
+table.calibragem tr[data-clicavel="true"]{ cursor:pointer; }
+
+.pill-cor{ display:inline-block; padding:4px 12px; border-radius:100px; font-size:12px; font-weight:600; min-width:56px; }
+.pill-Verde{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.pill-Amarelo{ background:var(--ambar-alerta-fundo); color:var(--ambar-alerta); }
+.pill-Vermelho{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.check-sim{ color:var(--verde-lucro); font-size:16px; }
+.check-nao{ color:var(--vermelho-prejuizo); font-size:16px; }
+
+.nota-analista{ border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:14px 18px; font-size:13.5px; line-height:1.6; margin-top:18px; }
+.nota-analista strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+.nota-analista.piso-duro{ border-left-color:var(--vermelho-prejuizo); background:var(--vermelho-prejuizo-fundo); }
+
+.barra-confirmacao{ margin-top:18px; border:1px solid var(--linha-forte); background:rgba(255,255,255,0.5); padding:16px 18px; }
+.barra-confirmacao-topo{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.lote-ativo-label{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); }
+.lote-ativo-valor{ font-family:'Fraunces', serif; font-size:20px; font-weight:600; margin-left:8px; }
+.btn-confirmar{ font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:10px 20px; cursor:pointer; }
+.btn-confirmar:disabled{ opacity:0.5; cursor:not-allowed; }
+.aviso-divergencia{ display:none; margin-top:14px; border-left:3px solid var(--ambar-alerta); background:var(--ambar-alerta-fundo); padding:12px 15px; }
+.aviso-divergencia.ativo{ display:block; }
+.aviso-divergencia label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta); display:block; margin-bottom:7px; }
+.aviso-divergencia textarea{ width:100%; min-height:60px; font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; padding:9px 11px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); resize:vertical; }
+
+.historico-selecao{ margin-top:14px; }
+.historico-selecao summary{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); cursor:pointer; }
+.historico-item{ font-size:13px; padding:9px 0; border-bottom:1px solid var(--linha); color:var(--tinta-suave); }
+.historico-item strong{ color:var(--tinta); }
+
+.aviso-bloqueante{ border-left:3px solid var(--vermelho-prejuizo); background:var(--vermelho-prejuizo-fundo); padding:16px 20px; font-size:14px; line-height:1.6; }
+.aviso-bloqueante strong{ display:block; font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+.aviso-bloqueante a{ color:var(--vermelho-prejuizo); font-weight:600; }
+.aviso-somente-leitura{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); background:var(--papel-escuro); padding:8px 14px; border:1px solid var(--linha-forte); margin-bottom:16px; }
+
+.msg-topo{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; margin-bottom:16px; display:none; }
+.msg-topo.sucesso{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.msg-topo.erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="seletor-aluno" id="seletor-aluno-wrapper" style="display:none;">
+    <label>Aluno</label>
+    <select id="select-aluno" onchange="trocarAluno()">
+      <option value="">Selecione um aluno...</option>
+    </select>
+    <span class="zona-badge" id="zona-badge" style="display:none;"></span>
+    <div class="nav-modulo">
+      <a href="avaliacao_inicial.html">Avaliação Inicial</a>
+      <a href="ficha_metodo.html">Ficha de Método</a>
+      <a href="entrevista_financeira.html">Entrevista Financeira</a>
+      <a href="#" class="ativa">Calibragem de Lote</a>
+    </div>
+  </div>
+
+  <main id="conteudo" style="display:none;">
+    <div class="msg-topo" id="msg-topo"></div>
+    <div class="aviso-somente-leitura" id="aviso-somente-leitura" style="display:none;">👁 Você está vendo esta página como aluno — pode consultar todos os dados e o histórico, mas apenas o mentor/admin pode alterar o lote selecionado.</div>
+
+    <div id="bloco-bloqueante" style="display:none;"></div>
+
+    <div id="bloco-calibragem" style="display:none;">
+      <section class="secao">
+        <div class="secao-header"><h2>Base de cálculo</h2></div>
+        <div class="secao-intro">Vem das outras 3 telas do módulo — para alterar, edite na tela de origem (links abaixo).</div>
+        <div class="grade-inputs" id="grade-inputs"></div>
+      </section>
+
+      <section class="secao">
+        <div class="secao-header"><h2>Tabela de Calibragem</h2></div>
+        <div class="secao-intro">Cada linha é um lote possível. A cor indica o quanto aquele lote compromete o risco por trade. A última coluna confirma se o fundo mensal sobrevive à pior sequência de perdas.</div>
+
+        <table class="calibragem">
+          <thead>
+            <tr id="cabecalho-tabela"></tr>
+          </thead>
+          <tbody id="corpo-tabela-lote"></tbody>
+        </table>
+
+        <div class="nota-analista" id="nota-analista"></div>
+
+        <div class="barra-confirmacao">
+          <div class="barra-confirmacao-topo">
+            <div>
+              <span class="lote-ativo-label">Lote ativo atualmente</span>
+              <span class="lote-ativo-valor" id="lote-ativo-atual">nenhum registrado</span>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12px; color:var(--tinta-suave); margin-bottom:6px;">Nova seleção: <strong id="lote-selecionado-preview">—</strong></div>
+              <button class="btn-confirmar" id="btn-confirmar" disabled onclick="confirmarSelecao()">Confirmar lote</button>
+            </div>
+          </div>
+
+          <div class="aviso-divergencia" id="aviso-divergencia">
+            <label>Esta seleção diverge do lote recomendado — justifique a decisão</label>
+            <textarea id="justificativa" placeholder="Ex.: aluno solicitou redução preventiva após semana de ansiedade elevada no diário de trade..."></textarea>
+          </div>
+
+          <details class="historico-selecao">
+            <summary>Ver histórico de alterações (<span id="qtd-historico">0</span>)</summary>
+            <div id="lista-historico"></div>
+          </details>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="carregando" id="carregando">Carregando...</div>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  // Parâmetros do sistema — espelham os mesmos valores de Code.gs (MARGEM_SEGURANCA_POR_ZONA
+  // etc). Se ajustar num lado, ajustar no outro — duplicação simples e de baixo risco,
+  // não vale a complexidade de buscar isso via API por enquanto.
+  const MARGEM_SEGURANCA_POR_ZONA = { 'Verde': 1.3, 'Amarela': 1.6, 'Vermelha': 2.0 };
+  const DIAS_MALOS_TOLERADOS_PADRAO = 5;
+  const RACHA_PADRAO_SEM_HISTORICO = 7;
+  const LOTE_MAXIMO_TABELA = 8;
+  const MIN_TRADES_PARA_HISTORICO = 10;
+
+  let sessaoAtual = null;
+  let ehAdmin = false;
+  let alunoDdi = null, alunoCelular = null;
+  let tabelaAtual = [];
+  let decisaoAtual = null; // { lote, tipo: 'recomendado'|'piso_duro_racha'|'piso_duro_absoluto', linha }
+  let loteAtivoSalvo = null;
+
+  async function carregar() {
+    sessaoAtual = iniciarPagina({ paginaAtiva: 'calibragem_lote.html', mostrarAbas: false, eyebrow: 'Calibragem de Lote' });
+    if (!sessaoAtual) return;
+    ehAdmin = sessaoAtual.rol === 'admin';
+
+    if (ehAdmin) {
+      document.getElementById('seletor-aluno-wrapper').style.display = 'flex';
+      try {
+        const resp = await fetch(APPSCRIPT_URL + '?action=usuarios&token=' + encodeURIComponent(sessaoAtual.token));
+        const data = await resp.json();
+        if (data.ok) {
+          const select = document.getElementById('select-aluno');
+          data.usuarios.filter(u => u.Ativo === 'Sim').forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.DDI + '|' + u.Celular;
+            opt.textContent = u.Nome;
+            select.appendChild(opt);
+          });
+        }
+        document.getElementById('carregando').style.display = 'none';
+      } catch (err) {
+        document.getElementById('carregando').textContent = 'Erro de conexão ao buscar alunos.';
+      }
+    } else {
+      document.getElementById('aviso-somente-leitura').style.display = 'block';
+      alunoDdi = localStorage.getItem('ddi');
+      alunoCelular = localStorage.getItem('celular');
+      await carregarDadosAluno();
+      document.getElementById('carregando').style.display = 'none';
+    }
+  }
+
+  async function trocarAluno() {
+    const valor = document.getElementById('select-aluno').value;
+    document.getElementById('conteudo').style.display = 'none';
+    if (!valor) return;
+    const [ddi, celular] = valor.split('|');
+    alunoDdi = ddi; alunoCelular = celular;
+    await carregarDadosAluno();
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('msg-topo');
+    el.textContent = texto;
+    el.className = 'msg-topo ' + tipo;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  function paramAlvo() {
+    return ehAdmin ? ('&ddi_alvo=' + encodeURIComponent(alunoDdi) + '&celular_alvo=' + encodeURIComponent(alunoCelular)) : '';
+  }
+
+  async function carregarDadosAluno() {
+    document.getElementById('conteudo').style.display = 'block';
+    document.getElementById('bloco-bloqueante').style.display = 'none';
+    document.getElementById('bloco-calibragem').style.display = 'none';
+
+    try {
+      const [respFicha, respEntrevista, respAvaliacao, respCalibragem] = await Promise.all([
+        fetch(APPSCRIPT_URL + '?action=ficha_metodo&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo()),
+        fetch(APPSCRIPT_URL + '?action=entrevista_financeira&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo()),
+        fetch(APPSCRIPT_URL + '?action=avaliacao&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo()),
+        fetch(APPSCRIPT_URL + '?action=calibragem&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo())
+      ]);
+      const ficha = (await respFicha.json()).atual;
+      const entrevista = (await respEntrevista.json()).atual;
+      const avaliacao = (await respAvaliacao.json()).atual;
+      const calibragemResp = await respCalibragem.json();
+
+      const faltando = [];
+      if (!avaliacao) faltando.push('<a href="avaliacao_inicial.html">Avaliação Inicial</a>');
+      if (!ficha) faltando.push('<a href="ficha_metodo.html">Ficha de Método</a>');
+      if (!entrevista) faltando.push('<a href="entrevista_financeira.html">Entrevista Financeira</a>');
+
+      if (faltando.length > 0) {
+        document.getElementById('bloco-bloqueante').style.display = 'block';
+        document.getElementById('bloco-bloqueante').innerHTML = `
+          <div class="aviso-bloqueante">
+            <strong>Calibragem indisponível</strong>
+            Este aluno ainda não completou: ${faltando.join(', ')}. Complete essas etapas antes de calcular o lote.
+          </div>`;
+        return;
+      }
+
+      const tradesResp = ehAdmin
+        ? await fetch(APPSCRIPT_URL + '?action=trades_aluno&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo())
+        : await fetch(APPSCRIPT_URL + '?action=trades&token=' + encodeURIComponent(sessaoAtual.token));
+      const tradesData = await tradesResp.json();
+      const trades = tradesData.ok ? tradesData.trades : [];
+
+      let rachaCalculada, origemRacha;
+      if (trades.length >= MIN_TRADES_PARA_HISTORICO) {
+        const ordenados = ordenarPorFecha(trades);
+        rachaCalculada = calcularRachaMaxima(ordenados).maxPerdas || RACHA_PADRAO_SEM_HISTORICO;
+        origemRacha = `histórico real · ${trades.length} operações`;
+      } else {
+        rachaCalculada = RACHA_PADRAO_SEM_HISTORICO;
+        origemRacha = 'padrão do sistema · aluno sem histórico suficiente';
+      }
+
+      renderizarBaseCalculo(ficha, entrevista, avaliacao, rachaCalculada, origemRacha);
+      document.getElementById('zona-badge').style.display = 'inline-block';
+      document.getElementById('zona-badge').textContent = 'Zona ' + avaliacao.Zona;
+      document.getElementById('zona-badge').className = 'zona-badge ' + avaliacao.Zona;
+
+      loteAtivoSalvo = calibragemResp.ok ? calibragemResp.atual : null;
+      renderizarHistoricoSelecao(calibragemResp.ok ? calibragemResp.historico : []);
+
+      recalcularTabela(ficha, entrevista, avaliacao, rachaCalculada);
+
+      document.getElementById('bloco-calibragem').style.display = 'block';
+    } catch (err) {
+      mostrarMensagem('Erro ao carregar dados do aluno.', 'erro');
+    }
+  }
+
+  function renderizarBaseCalculo(ficha, entrevista, avaliacao, racha, origemRacha) {
+    const margem = MARGEM_SEGURANCA_POR_ZONA[avaliacao.Zona];
+    document.getElementById('grade-inputs').innerHTML = `
+      <div class="campo-input">
+        <div class="rot">Fundo perdido mensal <span class="info-icone" title="Valor acordado na entrevista financeira.">ⓘ</span></div>
+        <div class="val">R$ ${Number(entrevista.Fundo_Perdido_Mensal).toFixed(2)}</div>
+        <div class="origem">entrevista financeira · v${entrevista.Versao} <a class="link-editar" href="entrevista_financeira.html">editar</a></div>
+      </div>
+      <div class="campo-input">
+        <div class="rot">Perda de trailing (pts) <span class="info-icone" title="Perda média real observada quando o trailing stop é executado.">ⓘ</span></div>
+        <div class="val">${ficha.Perda_Trailing_Pts}</div>
+        <div class="origem">ficha de método · v${ficha.Versao} <a class="link-editar" href="ficha_metodo.html">editar</a></div>
+      </div>
+      <div class="campo-input">
+        <div class="rot">Stop máximo (hard) <span class="info-icone" title="Teto de segurança absoluto — não usado para calibrar, só para referência.">ⓘ</span></div>
+        <div class="val">${ficha.Stop_Maximo_Pts} pts</div>
+        <div class="origem">ficha de método · v${ficha.Versao}</div>
+      </div>
+      <div class="campo-input">
+        <div class="rot">Margem de segurança <span class="info-icone" title="Multiplicador aplicado sobre a perda de trailing, conforme a Zona do aluno.">ⓘ</span></div>
+        <div class="val">${margem}x</div>
+        <div class="origem">parâmetro do sistema · Zona ${avaliacao.Zona}</div>
+      </div>
+    `;
+  }
+
+  function decidirLoteFinal(tabela, zona) {
+    const faixaPermitida = zona === 'Vermelha' ? ['Verde'] : ['Verde', 'Amarelo'];
+    const recomendado = loteRecomendado(tabela, zona);
+    if (recomendado) return { lote: recomendado.lote, tipo: 'recomendado', linha: recomendado };
+
+    // Opção B (decisão do projeto): piso duro de 1 mini, mesmo fora dos critérios calculados.
+    const linhaLote1 = tabela.find(l => l.lote === 1);
+    const lote1DentroDaZona = faixaPermitida.includes(linhaLote1.nivelRisco);
+    return {
+      lote: 1,
+      tipo: lote1DentroDaZona ? 'piso_duro_racha' : 'piso_duro_absoluto',
+      linha: linhaLote1
+    };
+  }
+
+  function recalcularTabela(ficha, entrevista, avaliacao, rachaDias) {
+    const margem = MARGEM_SEGURANCA_POR_ZONA[avaliacao.Zona];
+    tabelaAtual = gerarTabelaCalibragem({
+      perdaTrailingPts: Number(ficha.Perda_Trailing_Pts),
+      margemSeguranca: margem,
+      fundoPerdidoMensal: Number(entrevista.Fundo_Perdido_Mensal),
+      rachaMaximaDias: rachaDias,
+      diasMalosTolerados: DIAS_MALOS_TOLERADOS_PADRAO,
+      operacoesPorDia: Number(ficha.Ops_Max_Dia) || 3,
+      loteMaximo: LOTE_MAXIMO_TABELA
+    });
+    decisaoAtual = decidirLoteFinal(tabelaAtual, avaliacao.Zona);
+    renderizarTabela(avaliacao.Zona, rachaDias);
+  }
+
+  function renderizarTabela(zona, rachaDias) {
+    document.getElementById('cabecalho-tabela').innerHTML = `
+      <th style="width:52px;">${ehAdmin ? 'Usar' : ''}</th>
+      <th style="text-align:left; padding-left:16px;">Lote</th>
+      <th>Custo típico</th>
+      <th>% risco/trade</th>
+      <th>Nível de risco</th>
+      <th>% teto diário</th>
+      <th>Custo em <input type="number" id="input-racha-dias" value="${rachaDias}" min="1" ${ehAdmin ? '' : 'disabled'} onchange="recalcularComNovaRacha(this.value)"> dias de perda seguida</th>
+      <th>Sobrevive o mês?</th>
+    `;
+
+    const corpo = document.getElementById('corpo-tabela-lote');
+    corpo.innerHTML = tabelaAtual.map(l => {
+      const bloqueadoPorZona = loteEstaBloqueado(l, zona) && l.lote !== decisaoAtual.lote;
+      const ehADecisao = l.lote === decisaoAtual.lote;
+      const classeLinha = [
+        ehADecisao && decisaoAtual.tipo === 'recomendado' ? 'linha-recomendada' : '',
+        ehADecisao && decisaoAtual.tipo !== 'recomendado' ? 'linha-piso-duro' : ''
+      ].join(' ');
+      const clicavel = ehAdmin && (!bloqueadoPorZona || ehADecisao);
+
+      return `<tr class="${classeLinha}" data-lote="${l.lote}" data-clicavel="${clicavel}" style="${bloqueadoPorZona && !ehADecisao ? 'opacity:0.45;' : ''}" ${clicavel ? `onclick="selecionarLote(${l.lote})"` : ''}>
+        <td>${ehAdmin ? `<input type="radio" name="lote-escolhido" value="${l.lote}" ${!clicavel ? 'disabled' : ''} ${ehADecisao ? 'checked' : ''}>` : ''}</td>
+        <td class="lote-col">${l.lote} mini${l.lote > 1 ? 's' : ''}${bloqueadoPorZona && !ehADecisao ? ' <span style="font-size:10px;font-family:\'IBM Plex Mono\',monospace;color:var(--vermelho-prejuizo);">· fora da faixa da Zona</span>' : ''}</td>
+        <td>R$ ${l.custoTipico.toFixed(2)}</td>
+        <td>${l.percentualRisco.toFixed(1)}%</td>
+        <td><span class="pill-cor pill-${l.nivelRisco}">${l.nivelRisco}</span></td>
+        <td>${l.percentualTetoDiario.toFixed(1)}%</td>
+        <td>R$ ${l.custoRacha.toFixed(2)}</td>
+        <td>${l.sobreviveMes ? '<span class="check-sim">✓</span>' : '<span class="check-nao">✗</span>'}</td>
+      </tr>`;
+    }).join('');
+
+    const notaEl = document.getElementById('nota-analista');
+    if (decisaoAtual.tipo === 'recomendado') {
+      notaEl.className = 'nota-analista';
+      notaEl.innerHTML = `<strong>Nota do sistema</strong> Lote recomendado: <strong>${decisaoAtual.lote} mini${decisaoAtual.lote > 1 ? 's' : ''}</strong> — maior lote dentro da faixa de risco permitida pela Zona que também sobrevive à racha máxima de perdas.`;
+    } else if (decisaoAtual.tipo === 'piso_duro_racha') {
+      notaEl.className = 'nota-analista piso-duro';
+      notaEl.innerHTML = `<strong>⚠ Piso duro aplicado</strong> Nenhum lote dentro da faixa de risco da Zona sobrevive à racha máxima calculada. Por política do projeto, 1 mini é oferecido como piso mínimo — mesmo assim, uma racha como a já registrada no histórico deste aluno esgotaria o fundo perdido mensal.`;
+    } else {
+      notaEl.className = 'nota-analista piso-duro';
+      notaEl.innerHTML = `<strong>⚠ Piso duro absoluto</strong> Nem mesmo 1 mini está dentro da faixa de risco calculada para a Zona deste aluno. Está sendo oferecido como piso mínimo absoluto do sistema — recomenda-se revisar o fundo perdido mensal ou reavaliar a Zona antes de liberar operações em conta real.`;
+    }
+
+    // pré-seleciona a decisão atual na barra de confirmação
+    atualizarPreview(decisaoAtual.lote, decisaoAtual.tipo === 'recomendado' ? decisaoAtual.lote : null);
+    document.getElementById('lote-ativo-atual').textContent = loteAtivoSalvo
+      ? `${loteAtivoSalvo.Lote_Selecionado} mini(s) · v${loteAtivoSalvo.Versao}`
+      : 'nenhum registrado';
+    document.getElementById('btn-confirmar').disabled = !ehAdmin;
+  }
+
+  function recalcularComNovaRacha(novoValor) {
+    const dias = parseInt(novoValor, 10);
+    if (isNaN(dias) || dias < 1) return;
+    carregarDadosAlunoComRachaManual(dias);
+  }
+
+  async function carregarDadosAlunoComRachaManual(diasManual) {
+    // Re-executa o cálculo mantendo os mesmos dados base, só trocando a racha.
+    try {
+      const [respFicha, respEntrevista, respAvaliacao] = await Promise.all([
+        fetch(APPSCRIPT_URL + '?action=ficha_metodo&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo()),
+        fetch(APPSCRIPT_URL + '?action=entrevista_financeira&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo()),
+        fetch(APPSCRIPT_URL + '?action=avaliacao&token=' + encodeURIComponent(sessaoAtual.token) + paramAlvo())
+      ]);
+      const ficha = (await respFicha.json()).atual;
+      const entrevista = (await respEntrevista.json()).atual;
+      const avaliacao = (await respAvaliacao.json()).atual;
+      recalcularTabela(ficha, entrevista, avaliacao, diasManual);
+    } catch (err) {
+      mostrarMensagem('Erro ao recalcular com nova racha.', 'erro');
+    }
+  }
+
+  function selecionarLote(lote) {
+    if (!ehAdmin) return;
+    document.querySelectorAll('#corpo-tabela-lote tr').forEach(tr => tr.classList.remove('linha-selecionada'));
+    const tr = document.querySelector(`#corpo-tabela-lote tr[data-lote="${lote}"]`);
+    if (tr) tr.classList.add('linha-selecionada');
+    const radio = document.querySelector(`input[name="lote-escolhido"][value="${lote}"]`);
+    if (radio) radio.checked = true;
+
+    const recomendadoLote = decisaoAtual.tipo === 'recomendado' ? decisaoAtual.lote : null;
+    atualizarPreview(lote, recomendadoLote);
+  }
+
+  function atualizarPreview(lote, loteRecomendadoAtual) {
+    document.getElementById('lote-selecionado-preview').textContent = lote + ' mini' + (lote > 1 ? 's' : '');
+    const diverge = loteRecomendadoAtual === null || lote !== loteRecomendadoAtual;
+    document.getElementById('aviso-divergencia').classList.toggle('ativo', diverge && ehAdmin);
+    document.getElementById('btn-confirmar').disabled = !ehAdmin;
+    document.getElementById('lote-selecionado-preview').dataset.lote = lote;
+    document.getElementById('lote-selecionado-preview').dataset.recomendado = loteRecomendadoAtual === null ? '' : loteRecomendadoAtual;
+  }
+
+  function renderizarHistoricoSelecao(historico) {
+    document.getElementById('qtd-historico').textContent = historico.length;
+    document.getElementById('lista-historico').innerHTML = historico.slice().reverse().map(h => `
+      <div class="historico-item">
+        <strong>v${h.Versao} · ${new Date(h.Data).toLocaleDateString('pt-BR')}</strong> —
+        Lote definido em <strong>${h.Lote_Selecionado} mini(s)</strong>${h.Divergiu === 'Sim' ? ` (divergiu do recomendado: ${h.Justificativa})` : ' (seguiu recomendação do sistema)'}.
+        Mentor: ${h.Instrutor_Nome}.
+      </div>`).join('');
+  }
+
+  async function confirmarSelecao() {
+    if (!ehAdmin) return;
+    const previewEl = document.getElementById('lote-selecionado-preview');
+    const lote = parseInt(previewEl.dataset.lote, 10);
+    const recomendado = previewEl.dataset.recomendado;
+    const diverge = document.getElementById('aviso-divergencia').classList.contains('ativo');
+    const justificativa = document.getElementById('justificativa').value.trim();
+
+    if (diverge && !justificativa) {
+      mostrarMensagem('Justificativa obrigatória — o lote escolhido diverge do recomendado.', 'erro');
+      return;
+    }
+
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_calibragem',
+          token: sessaoAtual.token,
+          ddi_alvo: alunoDdi,
+          celular_alvo: alunoCelular,
+          lote_selecionado: lote,
+          lote_recomendado: recomendado,
+          justificativa: justificativa
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        mostrarMensagem(`Lote confirmado como v${data.versao}.`, 'sucesso');
+        document.getElementById('justificativa').value = '';
+        carregarDadosAluno();
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão ao salvar.', 'erro');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar lote';
+    }
+  }
+
+  carregar();
+</script>
+</body>
+</html>
