@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumo aos 200.000 — Ficha de Método</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#EDE7D8; --papel-escuro:#E1D9C4; --tinta:#22281F; --tinta-suave:#5B5A47;
+  --verde-lucro:#3B6E4F; --verde-lucro-fundo:#DEE8DF; --vermelho-prejuizo:#A13D2E; --vermelho-prejuizo-fundo:#EFDDD6;
+  --ambar-alerta:#B8862E; --ambar-alerta-fundo:#EFE3C8; --linha:#C9C1A9; --linha-forte:#AFA689;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ font-family:'IBM Plex Sans', sans-serif; font-size:16px; background:var(--papel); color:var(--tinta); min-height:100vh;
+  background-image:repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(34,40,31,0.035) 28px); }
+a{ color:inherit; }
+
+.seletor-aluno{ display:flex; align-items:center; gap:14px; padding:14px 32px; background:var(--papel-escuro); border-bottom:1px solid var(--linha-forte); flex-wrap:wrap; }
+.seletor-aluno label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--tinta-suave); }
+.seletor-aluno select{ font-family:'IBM Plex Mono', monospace; font-size:14px; padding:8px 12px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); min-width:260px; }
+.nav-modulo{ display:flex; gap:2px; margin-left:auto; flex-wrap:wrap; }
+.nav-modulo a{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); text-decoration:none; padding:8px 14px; border:1px solid transparent; }
+.nav-modulo a.ativa{ background:var(--papel); border-color:var(--linha-forte); color:var(--tinta); font-weight:600; }
+
+main{ max-width:900px; margin:0 auto; padding:36px 28px 80px; }
+.secao{ margin-bottom:30px; }
+.secao-header{ margin-bottom:14px; padding-bottom:9px; border-bottom:2px solid var(--tinta); }
+.secao-header h2{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; }
+.secao-intro{ font-size:14px; color:var(--tinta-suave); margin-bottom:16px; line-height:1.6; }
+.info-icone{ display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid var(--tinta-suave); font-size:9.5px; color:var(--tinta-suave); cursor:help; font-family:'IBM Plex Mono', monospace; margin-left:4px; }
+
+.toggle-setup{ display:flex; border:1px solid var(--linha-forte); margin-bottom:24px; }
+.toggle-setup label{ flex:1; text-align:center; padding:16px 12px; cursor:pointer; font-family:'IBM Plex Mono', monospace; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); border-right:1px solid var(--linha); }
+.toggle-setup label:last-child{ border-right:none; }
+.toggle-setup input{ display:none; }
+.toggle-setup input:checked + label{ background:var(--tinta); color:var(--papel); font-weight:600; }
+.toggle-setup .sub{ display:block; font-size:10.5px; text-transform:none; letter-spacing:0; margin-top:5px; opacity:0.8; }
+
+.grade-campos{ display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--linha-forte); }
+.campo{ padding:16px 18px; border-right:1px solid var(--linha); border-bottom:1px solid var(--linha); }
+.campo:nth-child(2n){ border-right:none; }
+.campo .rot{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--tinta-suave); margin-bottom:8px; display:flex; align-items:center; }
+.campo input{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:16px; padding:9px 11px; border:1px solid var(--linha-forte); background:var(--papel); color:var(--tinta); }
+.campo input:disabled{ background:var(--papel-escuro); color:var(--tinta-suave); }
+.campo .origem-linha{ display:flex; justify-content:space-between; align-items:center; margin-top:7px; gap:8px; flex-wrap:wrap; }
+.campo .origem{ font-size:10.5px; color:var(--tinta-suave); font-style:italic; }
+.campo .btn-usar-historico{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; color:var(--verde-lucro); background:none; border:1px solid var(--verde-lucro); padding:2px 7px; cursor:pointer; border-radius:2px; }
+.campo .btn-usar-historico:disabled{ opacity:0.4; cursor:not-allowed; border-color:var(--tinta-suave); color:var(--tinta-suave); }
+
+.rodape-ficha{ display:flex; justify-content:space-between; align-items:center; margin-top:26px; padding-top:18px; border-top:1px solid var(--linha-forte); flex-wrap:wrap; gap:12px; }
+.btn-salvar{ font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13.5px; letter-spacing:0.04em; text-transform:uppercase; background:var(--tinta); color:var(--papel); border:none; padding:13px 28px; cursor:pointer; }
+.btn-salvar:disabled{ opacity:0.5; cursor:not-allowed; }
+.versao-atual{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--tinta-suave); }
+
+.historico-ficha{ margin-top:20px; }
+.historico-ficha summary{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--tinta-suave); cursor:pointer; }
+.historico-item{ font-size:13px; padding:9px 0; border-bottom:1px solid var(--linha); color:var(--tinta-suave); }
+.historico-item strong{ color:var(--tinta); }
+
+.msg-topo{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:10px 14px; margin-bottom:16px; display:none; }
+.msg-topo.sucesso{ background:var(--verde-lucro-fundo); color:var(--verde-lucro); }
+.msg-topo.erro{ background:var(--vermelho-prejuizo-fundo); color:var(--vermelho-prejuizo); }
+.carregando{ text-align:center; padding:60px 20px; font-family:'IBM Plex Mono', monospace; color:var(--tinta-suave); }
+.aviso-sem-historico{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--tinta-suave); background:var(--papel-escuro); padding:8px 12px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="seletor-aluno">
+    <label>Aluno</label>
+    <select id="select-aluno" onchange="trocarAluno()">
+      <option value="">Selecione um aluno...</option>
+    </select>
+    <div class="nav-modulo">
+      <a href="avaliacao_inicial.html">Avaliação Inicial</a>
+      <a href="#" class="ativa">Ficha de Método</a>
+      <a href="entrevista_financeira.html">Entrevista Financeira</a>
+      <a href="calibragem_lote.html">Calibragem de Lote</a>
+    </div>
+  </div>
+
+  <main id="conteudo" style="display:none;">
+    <div class="msg-topo" id="msg-topo"></div>
+    <div class="aviso-sem-historico" id="aviso-sem-historico" style="display:none;">Este aluno ainda não tem operações carregadas — os botões "usar histórico" ficam desativados até existir CSV suficiente.</div>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Tipo de setup</h2></div>
+      <div class="secao-intro">Define quais campos abaixo fazem sentido preencher. Setups com condução por trailing não têm "ganho médio" fixo — a saída é uma variável de resultado, não um parâmetro de entrada.</div>
+
+      <div class="toggle-setup">
+        <input type="radio" name="tipo-setup" id="setup-conducao" value="conducao" checked onclick="atualizarTipoSetup('conducao')">
+        <label for="setup-conducao">Condução (trailing)<span class="sub">saída sem alvo fixo</span></label>
+        <input type="radio" name="tipo-setup" id="setup-fixo" value="fixo" onclick="atualizarTipoSetup('fixo')">
+        <label for="setup-fixo">Alvo fixo (TP definido)<span class="sub">saída com ganho-alvo declarado</span></label>
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-header"><h2>Parâmetros operacionais</h2></div>
+      <div class="grade-campos">
+        <div class="campo">
+          <div class="rot">Janela horária</div>
+          <input type="text" id="campo-janela" placeholder="ex.: 10h às 14h">
+        </div>
+        <div class="campo">
+          <div class="rot">Operações máx. por dia</div>
+          <input type="number" id="campo-ops-max" value="3">
+        </div>
+
+        <div class="campo">
+          <div class="rot">Stop máximo (hard, pts)
+            <span class="info-icone" title="Teto de segurança absoluto do setup — usado para validar o pior cenário, não para calibrar o lote de uso normal.">ⓘ</span>
+          </div>
+          <input type="number" id="campo-stop-maximo">
+        </div>
+
+        <div class="campo">
+          <div class="rot">Perda de trailing histórica (pts)
+            <span class="info-icone" title="Perda média real observada quando o trailing stop é executado. Base de cálculo do lote — não o stop máximo.">ⓘ</span>
+          </div>
+          <input type="number" id="campo-trailing">
+          <div class="origem-linha">
+            <span class="origem" id="origem-trailing">valor manual</span>
+            <button class="btn-usar-historico" id="btn-hist-trailing" onclick="usarHistorico('trailing')" disabled>usar histórico</button>
+          </div>
+        </div>
+
+        <div class="campo" id="campo-ganho-wrapper">
+          <div class="rot">Ganho médio (pts)
+            <span class="info-icone" title="Só faz sentido em setups com alvo fixo. Em condução por trailing, o ganho é resultado, não parâmetro.">ⓘ</span>
+          </div>
+          <input type="number" id="campo-ganho" disabled placeholder="— não se aplica em condução —">
+          <div class="origem-linha"><span class="origem" id="origem-ganho">desativado — setup de condução</span></div>
+        </div>
+
+        <div class="campo">
+          <div class="rot">Win rate (%)</div>
+          <input type="number" id="campo-winrate" step="0.1">
+          <div class="origem-linha">
+            <span class="origem" id="origem-winrate">valor manual</span>
+            <button class="btn-usar-historico" id="btn-hist-winrate" onclick="usarHistorico('winrate')" disabled>usar histórico</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="rodape-ficha">
+      <span class="versao-atual" id="versao-atual">Nenhuma versão salva ainda</span>
+      <button class="btn-salvar" id="btn-salvar" onclick="salvarFicha()">Salvar nova versão</button>
+    </div>
+
+    <details class="historico-ficha">
+      <summary>Ver histórico de versões (<span id="qtd-historico">0</span>)</summary>
+      <div id="lista-historico"></div>
+    </details>
+  </main>
+
+  <div class="carregando" id="carregando">Carregando alunos...</div>
+
+<script src="nav.js"></script>
+<script src="stats.js"></script>
+<script>
+  let sessaoAtual = null;
+  let alunoDdi = null, alunoCelular = null;
+  let tradesDoAluno = null; // null = ainda não carregado; [] = carregado mas vazio
+
+  async function carregar() {
+    sessaoAtual = iniciarPagina({ paginaAtiva: 'ficha_metodo.html', mostrarAbas: false, eyebrow: 'Ficha de Método', somenteAdmin: true });
+    if (!sessaoAtual) return;
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=usuarios&token=' + encodeURIComponent(sessaoAtual.token));
+      const data = await resp.json();
+      if (!data.ok) { document.getElementById('carregando').textContent = 'Erro: ' + data.error; return; }
+      const select = document.getElementById('select-aluno');
+      data.usuarios.filter(u => u.Ativo === 'Sim').forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.DDI + '|' + u.Celular;
+        opt.textContent = u.Nome;
+        select.appendChild(opt);
+      });
+      document.getElementById('carregando').style.display = 'none';
+    } catch (err) {
+      document.getElementById('carregando').textContent = 'Erro de conexão ao buscar alunos.';
+    }
+  }
+
+  function atualizarTipoSetup(tipo) {
+    const input = document.getElementById('campo-ganho');
+    const origem = document.getElementById('origem-ganho');
+    if (tipo === 'fixo') {
+      input.disabled = false;
+      input.placeholder = '';
+      origem.textContent = 'valor manual';
+    } else {
+      input.disabled = true;
+      input.value = '';
+      input.placeholder = '— não se aplica em condução —';
+      origem.textContent = 'desativado — setup de condução';
+    }
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    const el = document.getElementById('msg-topo');
+    el.textContent = texto;
+    el.className = 'msg-topo ' + tipo;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  async function trocarAluno() {
+    const valor = document.getElementById('select-aluno').value;
+    document.getElementById('conteudo').style.display = 'none';
+    if (!valor) return;
+
+    const [ddi, celular] = valor.split('|');
+    alunoDdi = ddi; alunoCelular = celular;
+    tradesDoAluno = null;
+
+    // reset dos campos
+    document.getElementById('campo-janela').value = '';
+    document.getElementById('campo-ops-max').value = 3;
+    document.getElementById('campo-stop-maximo').value = '';
+    document.getElementById('campo-trailing').value = '';
+    document.getElementById('campo-winrate').value = '';
+    document.getElementById('campo-ganho').value = '';
+    document.querySelector('#setup-conducao').checked = true;
+    atualizarTipoSetup('conducao');
+    document.getElementById('btn-hist-trailing').disabled = true;
+    document.getElementById('btn-hist-winrate').disabled = true;
+    document.getElementById('aviso-sem-historico').style.display = 'none';
+
+    document.getElementById('conteudo').style.display = 'block';
+
+    // busca ficha existente (última versão + histórico)
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=ficha_metodo&token=' + encodeURIComponent(sessaoAtual.token) +
+        '&ddi_alvo=' + encodeURIComponent(ddi) + '&celular_alvo=' + encodeURIComponent(celular));
+      const data = await resp.json();
+      if (data.ok) {
+        if (data.atual) {
+          document.getElementById('campo-janela').value = data.atual.Janela_Horaria || '';
+          document.getElementById('campo-ops-max').value = data.atual.Ops_Max_Dia || 3;
+          document.getElementById('campo-stop-maximo').value = data.atual.Stop_Maximo_Pts || '';
+          document.getElementById('campo-trailing').value = data.atual.Perda_Trailing_Pts || '';
+          document.getElementById('campo-winrate').value = data.atual.Win_Rate_Pct || '';
+          const tipoSalvo = data.atual.Tipo_Setup || 'conducao';
+          document.querySelector(`input[name="tipo-setup"][value="${tipoSalvo}"]`).checked = true;
+          atualizarTipoSetup(tipoSalvo);
+          if (tipoSalvo === 'fixo') document.getElementById('campo-ganho').value = data.atual.Ganho_Medio_Pts || '';
+          document.getElementById('versao-atual').textContent =
+            `Versão atual: v${data.atual.Versao} · última alteração ${new Date(data.atual.Data).toLocaleDateString('pt-BR')}`;
+        } else {
+          document.getElementById('versao-atual').textContent = 'Nenhuma versão salva ainda — esta será a v1';
+        }
+        renderizarHistorico(data.historico || []);
+      }
+    } catch (err) {
+      mostrarMensagem('Erro ao carregar ficha existente.', 'erro');
+    }
+
+    // busca trades do aluno para habilitar "usar histórico"
+    try {
+      const resp = await fetch(APPSCRIPT_URL + '?action=trades_aluno&token=' + encodeURIComponent(sessaoAtual.token) +
+        '&ddi_alvo=' + encodeURIComponent(ddi) + '&celular_alvo=' + encodeURIComponent(celular));
+      const data = await resp.json();
+      if (data.ok) {
+        tradesDoAluno = data.trades;
+        const temDados = tradesDoAluno.length >= 10; // amostra mínima arbitrária — ver nota
+        document.getElementById('btn-hist-trailing').disabled = !temDados;
+        document.getElementById('btn-hist-winrate').disabled = !temDados;
+        document.getElementById('aviso-sem-historico').style.display = temDados ? 'none' : 'block';
+      }
+    } catch (err) {
+      // silencioso — botões ficam desativados por padrão
+    }
+  }
+
+  function usarHistorico(campo) {
+    if (!tradesDoAluno || tradesDoAluno.length === 0) return;
+    const basico = calcularBasico(tradesDoAluno);
+    if (campo === 'trailing') {
+      // Aproximação: Resultado_R$ já é líquido por operação (considera Cantidad).
+      // Perda em pontos ≈ média das perdas em R$ ÷ (0,20 × Cantidad média das perdedoras).
+      // É uma média de razões aproximada, não uma razão de médias exata — suficiente
+      // para popular o campo; o instrutor pode ajustar manualmente se achar necessário.
+      const perdedoras = tradesDoAluno.filter(t => (Number(t['Resultado_R$']) || 0) < 0);
+      if (perdedoras.length === 0) { mostrarMensagem('Nenhuma operação perdedora no histórico ainda.', 'erro'); return; }
+      const mediaPerdaRs = perdedoras.reduce((a, t) => a + Math.abs(Number(t['Resultado_R$']) || 0), 0) / perdedoras.length;
+      const mediaCantidad = perdedoras.reduce((a, t) => a + (Number(t.Cantidad) || 1), 0) / perdedoras.length;
+      const perdaPts = mediaPerdaRs / (0.20 * mediaCantidad);
+      document.getElementById('campo-trailing').value = perdaPts.toFixed(0);
+      document.getElementById('origem-trailing').textContent = `histórico CSV · ${perdedoras.length} operações perdedoras`;
+    } else if (campo === 'winrate') {
+      document.getElementById('campo-winrate').value = basico.winRate.toFixed(1);
+      document.getElementById('origem-winrate').textContent = `histórico CSV · ${basico.n} operações`;
+    }
+  }
+
+  function renderizarHistorico(historico) {
+    document.getElementById('qtd-historico').textContent = historico.length;
+    document.getElementById('lista-historico').innerHTML = historico.slice().reverse().map(h => `
+      <div class="historico-item">
+        <strong>v${h.Versao} · ${new Date(h.Data).toLocaleDateString('pt-BR')}</strong> —
+        ${h.Tipo_Setup === 'fixo' ? 'Alvo fixo' : 'Condução'} · trailing ${h.Perda_Trailing_Pts}pts ·
+        stop máx ${h.Stop_Maximo_Pts}pts · win rate ${h.Win_Rate_Pct}%. Instrutor: ${h.Instrutor_Nome}.
+      </div>`).join('');
+  }
+
+  async function salvarFicha() {
+    if (!alunoDdi) { mostrarMensagem('Selecione um aluno primeiro.', 'erro'); return; }
+
+    const tipoSetup = document.querySelector('input[name="tipo-setup"]:checked').value;
+    const stopMaximo = document.getElementById('campo-stop-maximo').value;
+    const trailing = document.getElementById('campo-trailing').value;
+    const winrate = document.getElementById('campo-winrate').value;
+    const ganho = document.getElementById('campo-ganho').value;
+
+    if (!stopMaximo || !trailing || !winrate) {
+      mostrarMensagem('Stop máximo, perda de trailing e win rate são obrigatórios.', 'erro');
+      return;
+    }
+    if (tipoSetup === 'fixo' && !ganho) {
+      mostrarMensagem('Ganho médio é obrigatório para setup de alvo fixo.', 'erro');
+      return;
+    }
+    if (parseFloat(trailing) > parseFloat(stopMaximo)) {
+      mostrarMensagem('A perda de trailing não pode ser maior que o stop máximo.', 'erro');
+      return;
+    }
+
+    const btn = document.getElementById('btn-salvar');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    try {
+      const resp = await fetch(APPSCRIPT_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'salvar_ficha_metodo',
+          token: sessaoAtual.token,
+          ddi_alvo: alunoDdi,
+          celular_alvo: alunoCelular,
+          tipo_setup: tipoSetup,
+          janela_horaria: document.getElementById('campo-janela').value,
+          ops_max_dia: document.getElementById('campo-ops-max').value,
+          stop_maximo_pts: stopMaximo,
+          perda_trailing_pts: trailing,
+          win_rate_pct: winrate,
+          ganho_medio_pts: tipoSetup === 'fixo' ? ganho : ''
+        })
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        mostrarMensagem(`Ficha salva como v${data.versao}.`, 'sucesso');
+        trocarAluno(); // recarrega para refletir a nova versão e histórico
+      } else {
+        mostrarMensagem(data.error || 'Não foi possível salvar.', 'erro');
+      }
+    } catch (err) {
+      mostrarMensagem('Erro de conexão ao salvar.', 'erro');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar nova versão';
+    }
+  }
+
+  carregar();
+</script>
+</body>
+</html>
